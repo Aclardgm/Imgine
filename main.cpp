@@ -42,6 +42,10 @@
 #include <assimp/postprocess.h>
 
 
+#define FLECS_CPP
+#include "flecs/flecs.h"
+
+
 
 // [Win32] Our example includes a copy of glfw3.lib pre-compiled with VS2010 to maximize ease of testing and compatibility with old VS compilers.
 // To link with VS2010-era libraries, VS2015+ requires linking with legacy_stdio_definitions.lib, which we do using this pragma.
@@ -398,9 +402,27 @@ static void FramePresent(ImGui_ImplVulkanH_Window* wd)
     wd->SemaphoreIndex = (wd->SemaphoreIndex + 1) % wd->SemaphoreCount; // Now we can use the next set of semaphores
 }
 
+
+void fl()
+{
+    flecs::world world;
+    auto e = world.entity("Bob");
+    e.is_alive(); // true!
+
+
+
+    std::cout << "Entity name: " << e.name() << std::endl;
+
+    e.destruct();
+    std::cout << e.is_alive() << std::endl; // false!
+}
+
+
+
 // Main code
 int main(int, char**)
 {
+    fl();
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit())
         return 1;
