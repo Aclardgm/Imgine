@@ -400,5 +400,5 @@ FodyWeavers.xsd
 
 
 # GLFW Miscs
-glfw/docs
-glfw/lib-vc201*
+glfw/docs/
+glfw/lib-vc201*/
