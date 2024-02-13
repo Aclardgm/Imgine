@@ -396,3 +396,9 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+
+
+# GLFW Miscs
+glfw/docs
+glfw/lib-vc201*
