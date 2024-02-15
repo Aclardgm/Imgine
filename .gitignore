@@ -399,6 +399,10 @@ FodyWeavers.xsd
 
 
 
-# GLFW Miscs
-glfw/docs/
-glfw/lib-vc201*/
+# Ignore Libs
+libs/
+
+
+# Ignore build
+out/build
+

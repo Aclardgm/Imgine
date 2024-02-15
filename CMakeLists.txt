@@ -25,9 +25,12 @@ if(NOT glfw_POPULATED)
     set(GLFW_BUILD_TESTS OFF CACHE INTERNAL "Build the GLFW test programs")
     set(GLFW_BUILD_DOCS OFF CACHE INTERNAL "Build the GLFW documentation")
     set(GLFW_INSTALL OFF CACHE INTERNAL "Generate installation target")
-
+    set(GLFW_DOCUMENT_INTERNALS OFF CACHE INTERNAL "Include internals in documentation")
+    
     add_subdirectory(${glfw_SOURCE_DIR} ${glfw_BINARY_DIR})
 endif()
+
+
 
 ### Fetch GLM
 FetchContent_Declare(
@@ -73,6 +76,28 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(imgui)
 
 
+##FetchContent_GetProperties(imgui)
+# if (NOT imgui_POPULATED)
+    # FetchContent_Populate(imgui)
+    # set(IMGUI_INCLUDE_DIR ${imgui_SOURCE_DIR}/)
+    # file(GLOB IMGUI_SOURCES ${imgui_SOURCE_DIR}/*.cpp)
+    # file(GLOB IMGUI_HEADERS ${imgui_SOURCE_DIR}/*.h)
+    # add_library(imgui STATIC ${IMGUI_SOURCES} ${IMGUI_SOURCES} ${imgui_SOURCE_DIR}/examples/imgui_impl_glfw.cpp ${imgui_SOURCE_DIR}/examples/imgui_impl_vulkan.cpp)
+    # add_definitions(-DIMGUI_IMPL_OPENGL_LOADER_GLAD)
+     # target_include_directories(imgui PUBLIC ${IMGUI_INCLUDE_DIR} ${OPENGL_INCLUDE_DIR} ${GLFW_INCLUDE_DIR} ${GLAD_INCLUDE_DIR})
+    # target_link_libraries(imgui ${OPENGL_LIBRARIES} glfw glad)
+# endif ()
+
+set(IMGUI_SOURCE_FILES 
+                ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp 
+                ${imgui_SOURCE_DIR}/backends/imgui_impl_vulkan.cpp 
+                ${imgui_SOURCE_DIR}/imgui.cpp 
+                ${imgui_SOURCE_DIR}/imgui_draw.cpp 
+                ${imgui_SOURCE_DIR}/imgui_demo.cpp 
+                ${imgui_SOURCE_DIR}/imgui_tables.cpp 
+                ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+)
+
 
 ### Fetch STB (Image write and Load)
 # FetchContent_Declare(
@@ -100,24 +125,31 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(Boost)
 
 
+
+find_package(Vulkan REQUIRED)
+
+
 ### Main App
 set(SOURCE_FILES src/main.cpp)
-add_executable(${PROJECT_NAME} ${SOURCE_FILES})
+add_executable(${PROJECT_NAME} 
+                ${SOURCE_FILES}
+                ${IMGUI_SOURCE_FILES}
+)
 
 
 target_include_directories(
     ${PROJECT_NAME}
     PRIVATE
-    include/
-    libs/glfw/include
-    libs/glm
+    libs/glfw-src/include
+    libs/glm-src
     libs/assimp-src/include
-    libs/imgui/backends
-    libs/stb
-    libs/boost
+    libs/imgui-src
+    libs/imgui-src/backends
+    libs/boost-src
+    libs/flecs-src
+    include/
+    include/stb
 )
-
-find_package(Vulkan REQUIRED)
 
 
 ### Links 
