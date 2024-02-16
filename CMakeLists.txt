@@ -6,6 +6,7 @@ project(Imgine VERSION 0.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
+set(CMAKE_GENERATOR_PLATFORM x64)
 
 include(FetchContent)
 set(FETCHCONTENT_BASE_DIR ${PROJECT_SOURCE_DIR}/libs CACHE PATH "Missing description." FORCE)
@@ -130,7 +131,7 @@ find_package(Vulkan REQUIRED)
 
 
 ### Main App
-set(SOURCE_FILES src/main.cpp)
+set(SOURCE_FILES src/main.cpp )
 add_executable(${PROJECT_NAME} 
                 ${SOURCE_FILES}
                 ${IMGUI_SOURCE_FILES}
@@ -147,8 +148,8 @@ target_include_directories(
     libs/imgui-src/backends
     libs/boost-src
     libs/flecs-src
-    include/
     include/stb
+	include/
 )
 
 
