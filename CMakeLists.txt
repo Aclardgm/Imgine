@@ -113,18 +113,24 @@ set(IMGUI_SOURCE_FILES
 
 
 ### Fetch Boost
-set(BOOST_INCLUDE_LIBRARIES thread any)
-set(BOOST_ENABLE_CMAKE ON)
+# set(Boost_USE_STATIC_LIBS        ON)  # only find static libs
+# set(Boost_USE_DEBUG_LIBS        OFF)  # ignore debug libs and
+# set(Boost_USE_RELEASE_LIBS       ON)  # only find release libs
+# set(Boost_USE_MULTITHREADED      ON)
+# set(Boost_USE_STATIC_RUNTIME    OFF)
+# find_package(Boost 1.84.0)
 
-include(FetchContent)
+
+### Fetch Boost
+Include(FetchContent)
+
 FetchContent_Declare(
-  Boost
-  GIT_REPOSITORY https://github.com/boostorg/boost.git
-  GIT_TAG boost-1.84.0 
-  GIT_SHALLOW TRUE
+  Catch2
+  GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+  GIT_TAG        v3.4.0 # or a later release
 )
-FetchContent_MakeAvailable(Boost)
 
+FetchContent_MakeAvailable(Catch2)
 
 
 find_package(Vulkan REQUIRED)
@@ -132,10 +138,12 @@ find_package(Vulkan REQUIRED)
 
 ### Main App
 set(SOURCE_FILES src/main.cpp )
+
 add_executable(${PROJECT_NAME} 
-                ${SOURCE_FILES}
                 ${IMGUI_SOURCE_FILES}
+                ${SOURCE_FILES}
 )
+
 
 
 target_include_directories(
@@ -146,18 +154,67 @@ target_include_directories(
     libs/assimp-src/include
     libs/imgui-src
     libs/imgui-src/backends
-    libs/boost-src
     libs/flecs-src
+	boost/boost_1_82_0
     include/stb
 	include/
 )
 
 
-### Links 
+
+set(BOOST_LIBS 
+Boost::boost
+Boost::headers 
+Boost::atomic 
+Boost::chrono 
+Boost::container 
+Boost::date_time 
+Boost::exception 
+Boost::regex 
+Boost::system 
+Boost::thread)
+
+set(LIBS
+${BOOST_LIBS}
+glfw 
+${GLFW_LIBRARIES}
+glm 
+assimp 
+flecs::flecs_static 
+Vulkan::Vulkan 
+Catch2::Catch2WithMain)
+
+
+### Links Main App
 target_link_libraries(${PROJECT_NAME} glfw ${GLFW_LIBRARIES})
-target_link_libraries(${PROJECT_NAME} glm assimp flecs::flecs_static Vulkan::Vulkan Boost::container)
+target_link_libraries(${PROJECT_NAME} glm assimp flecs::flecs_static Vulkan::Vulkan Catch2::Catch2WithMain)
 
 
+
+
+### Tests 
+set(TEST_PROJECT_NAME "TESTS_${PROJECT_NAME}")
+set(TESTS_SOURCE_FILES src/tests/imgine_jobysystem_test.cpp)
+add_executable(${TEST_PROJECT_NAME} 
+                ${IMGUI_SOURCE_FILES}
+                ${TESTS_SOURCE_FILES}
+)
+target_include_directories(
+    ${TEST_PROJECT_NAME}
+    PUBLIC
+    libs/glfw-src/include
+    libs/glm-src
+    libs/assimp-src/include
+    libs/imgui-src
+    libs/imgui-src/backends
+    libs/flecs-src
+	boost/boost_1_82_0
+    include/stb
+	include/
+)
+
+target_link_libraries(${TEST_PROJECT_NAME} glfw ${GLFW_LIBRARIES})
+target_link_libraries(${TEST_PROJECT_NAME} glm assimp flecs::flecs_static Vulkan::Vulkan Catch2::Catch2WithMain)
 
 
 

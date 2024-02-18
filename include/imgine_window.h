@@ -5,26 +5,28 @@
 #include "imgine_glfw.h"
 
 
-class ImgineWindow
+struct WindowData
 {
-public :
-    virtual int Setup() = 0;
+    uint32_t Width;
+    uint32_t Height;
+    std::string Title;
 };
 
 
-class ImgineGLFWWindow : public ImgineWindow
+struct Imgine_GLFWWindow 
 {
-	GLFWwindow* Window;
     
 public:
-    virtual int Setup() override 
+	GLFWwindow* GLFWWindow;
+    int SetupWindow(WindowData data) 
 	{
         glfwSetErrorCallback(glfw_error_callback);
         if (!glfwInit())
             return 1;
         // Create window with Vulkan context
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        GLFWwindow* window = glfwCreateWindow(1280, 720, "Dear ImGui GLFW+Vulkan example", nullptr, nullptr);
+        glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+        GLFWWindow = glfwCreateWindow(data.Width, data.Height, data.Title.c_str(), nullptr, nullptr);
         if (!glfwVulkanSupported())
         {
             printf("GLFW: Vulkan Not Supported\n");
@@ -32,6 +34,13 @@ public:
         }
         return 0;
 	}
+
+    void Cleanup()
+    {
+        glfwDestroyWindow(GLFWWindow);
+
+        glfwTerminate();
+    }
 
 
 };
