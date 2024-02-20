@@ -137,7 +137,13 @@ find_package(Vulkan REQUIRED)
 
 
 ### Main App
-set(SOURCE_FILES src/main.cpp )
+set(SOURCE_FILES 
+				src/imgine_glfw.cpp
+				src/imgine_vulkan.cpp
+				src/imgine_window.cpp
+				src/imgine_app.cpp
+				src/main.cpp 
+)
 
 add_executable(${PROJECT_NAME} 
                 ${IMGUI_SOURCE_FILES}
