@@ -18,7 +18,7 @@ struct Imgine_GLFWWindow
 public:
 	GLFWwindow* GLFWWindow;
     int SetupWindow(WindowData data);
-
+    void createSurface(VkDevice device);
     void Cleanup();
     GLFWwindow* getWindow() { return GLFWWindow; };
 };

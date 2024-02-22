@@ -12,9 +12,9 @@
 
 #include <stdio.h>          // printf, fprintf
 #include <stdlib.h>         // abort
+
+
 #include "imgine_jobsystem.h"
-#include "imgine_glfw.h"
-#include "imgine_vulkan.h"
 #include "imgine_app.h"
 
 
@@ -573,9 +573,15 @@ int main(int, char**)
 
     JobSystem js;
     Imgine_Application app;
-    js.schedule([&]() {app.run(); js.terminate(); });
+    //js.schedule([&]() {app.run(); js.terminate(); });
 
-    wait_for_termination();
+    app.run();
+
+    //wait_for_termination();
+
+
+    app.Cleanup();
+
 
     return 0;
 }

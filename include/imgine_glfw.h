@@ -4,7 +4,6 @@
 #ifndef ImGINE_GLFW
 #define ImGINE_GLFW
 
-#define GLFW_INCLUDE_NONE
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 

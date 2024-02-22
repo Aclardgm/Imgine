@@ -11,7 +11,6 @@ void Imgine_Application::run()
     Window.SetupWindow(data);
     Vulkan.initVulkan(Window.GLFWWindow);
     MainLoop();
-    Cleanup();
 }
 
 Imgine_Application* Imgine_Application::getInstance()
@@ -24,8 +23,17 @@ void Imgine_Application::MainLoop()
 {
     while (!glfwWindowShouldClose(Window.GLFWWindow)) {
         glfwPollEvents();
+        DrawFrame();
+
 
     }
+}
+
+
+void Imgine_Application::DrawFrame()
+{
+    Vulkan.Draw();
+
 }
 void Imgine_Application::Cleanup()
 {

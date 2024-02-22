@@ -15,7 +15,7 @@ set(FETCHCONTENT_BASE_DIR ${PROJECT_SOURCE_DIR}/libs CACHE PATH "Missing descrip
 FetchContent_Declare(
 	glfw
 	GIT_REPOSITORY	https://github.com/glfw/glfw.git 
-	GIT_TAG 	3.3.9  
+	GIT_TAG 	3.3-stable
 )
 
 FetchContent_GetProperties(glfw)
@@ -221,6 +221,49 @@ target_include_directories(
 
 target_link_libraries(${TEST_PROJECT_NAME} glfw ${GLFW_LIBRARIES})
 target_link_libraries(${TEST_PROJECT_NAME} glm assimp flecs::flecs_static Vulkan::Vulkan Catch2::Catch2WithMain)
+
+
+
+
+## Compile shaders
+###if (${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "AMD64")
+###else()
+###  set(GLSL_VALIDATOR "$ENV{VULKAN_SDK}/Bin32/glslc.exe")
+###endif()
+
+
+set(GLSL_VALIDATOR "$ENV{VULKAN_SDK}/Bin/glslangValidator.exe")
+
+file(GLOB_RECURSE GLSL_SOURCE_FILES
+    "shaders/*.frag"
+    "shaders/*.vert"
+    )
+
+foreach(GLSL ${GLSL_SOURCE_FILES})
+  get_filename_component(FILE_NAME ${GLSL} NAME)
+  set(SPIRV "${PROJECT_BINARY_DIR}/shaders/${FILE_NAME}.spv")
+  add_custom_command(
+    OUTPUT ${SPIRV}
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/shaders/"
+    COMMAND ${GLSL_VALIDATOR} -V ${GLSL} -o ${SPIRV} -C -v
+    DEPENDS ${GLSL})
+  list(APPEND SPIRV_BINARY_FILES ${SPIRV})
+endforeach(GLSL)
+
+add_custom_target(
+    Shaders 
+    DEPENDS ${SPIRV_BINARY_FILES}
+    )
+
+add_dependencies(${TEST_PROJECT_NAME} Shaders)
+
+add_custom_command(TARGET ${TEST_PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:${TEST_PROJECT_NAME}>/shaders/"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${PROJECT_BINARY_DIR}/shaders"
+        "$<TARGET_FILE_DIR:${TEST_PROJECT_NAME}>/shaders"
+)
+
 
 
 
