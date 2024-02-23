@@ -24,9 +24,8 @@ void Imgine_Application::MainLoop()
     while (!glfwWindowShouldClose(Window.GLFWWindow)) {
         glfwPollEvents();
         DrawFrame();
-
-
     }
+    vkDeviceWaitIdle(Vulkan.device);
 }
 
 

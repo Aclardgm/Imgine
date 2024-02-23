@@ -19,7 +19,7 @@ void CheckFlecs()
 
     std::cout << "Entity name: " << e.name() << std::endl;
 
-    auto e = world.entity();
+    //auto e = world.entity();
 
     //// Add a component. This creates the component in the ECS storage, but does not
     //// assign it with a value.
