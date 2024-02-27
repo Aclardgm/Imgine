@@ -12,6 +12,8 @@ int Imgine_GLFWWindow::SetupWindow(WindowData data)
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
     GLFWWindow = glfwCreateWindow(data.Width, data.Height, data.Title.c_str(), nullptr, nullptr);
+    glfwSetWindowUserPointer(GLFWWindow, this);
+    glfwSetFramebufferSizeCallback(GLFWWindow, frameBufferResizeCallback);
     if (!glfwVulkanSupported())
     {
         printf("GLFW: Vulkan Not Supported\n");
@@ -25,4 +27,15 @@ void Imgine_GLFWWindow::Cleanup()
 {
     glfwDestroyWindow(GLFWWindow);
     glfwTerminate();
+}
+
+void Imgine_GLFWWindow::GetWindowSize(int* width, int* height)
+{
+    if (GLFWWindow != nullptr) {
+        glfwGetFramebufferSize(GLFWWindow, width, height);
+    }
+    else {
+        *width = 0;
+        *height = 0;
+    }
 }

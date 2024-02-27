@@ -37,17 +37,13 @@ struct Imgine_SwapChain : public Imgine_VulkanInstanceBind {
     VkExtent2D swapChainExtent;
     std::vector<VkImageView> swapChainImageViews;
     std::vector<VkFramebuffer> swapChainFramebuffers;
+    std::vector<Imgine_VulkanSemaphore> imageAquiredSemaphores;
 
-    /*  Imgine_VulkanImage colorImage;
-      Imgine_VulkanImage depthImage;
-      Imgine_VulkanImageView colorImageView;
-      Imgine_VulkanImageView depthImageView;*/
 
-    Imgine_VulkanSemaphore imageAcquired;
 
 public:
     Imgine_SwapChain() = delete;
-    Imgine_SwapChain(Imgine_Vulkan* _instance) : Imgine_VulkanInstanceBind(_instance), imageAcquired(_instance) {}
+    Imgine_SwapChain(Imgine_Vulkan* _instance) : Imgine_VulkanInstanceBind(_instance){}
 
     VkFormat GetFormat() { return swapChainImageFormat; }
 
@@ -71,7 +67,17 @@ public:
 
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 
+    /// <summary>
+    /// Cleanup only framebuffers
+    /// </summary>
     void CleanupFrameBuffers();
+    /// <summary>
+    /// Cleanup all
+    /// </summary>
+    void Cleanup();
+    /// <summary>
+    /// Cleanup FrameBuffers/ImageViews/SwapChainKHR only
+    /// </summary>
     void CleanupSwapChain();
 
 };

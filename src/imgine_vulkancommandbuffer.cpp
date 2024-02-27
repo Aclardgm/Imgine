@@ -2,6 +2,7 @@
 #include <stdexcept>
 #include <vector>
 #include "imgine_vulkan.h"
+#include "imgine_vulkanhelpers.h"
 
 Imgine_CommandBuffer* Imgine_CommandBufferPool::Create() {
 
@@ -91,8 +92,96 @@ void Imgine_CommandBufferPool::Cleanup() {
 
 
 
+VkCommandBuffer Imgine_CommandBufferManager::beginSingleTimeCommand()
+{
+    VkCommandBufferAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocInfo.commandPool = pool.commandPool;
+    allocInfo.commandBufferCount = 1;
+
+    VkCommandBuffer commandBuffer;
+    vkAllocateCommandBuffers(GetVulkanInstanceBind()->GetDevice(), &allocInfo, &commandBuffer);
+
+    VkCommandBufferBeginInfo beginInfo{};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+    vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+    return commandBuffer;
+}
+
+void Imgine_CommandBufferManager::endSingleTimeCommand(VkQueue queue,VkCommandBuffer commandBuffer)
+{
+    vkEndCommandBuffer(commandBuffer);
+
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &commandBuffer;
+
+    vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
+    vkQueueWaitIdle(queue);
+
+    vkFreeCommandBuffers(GetVulkanInstanceBind()->GetDevice(), pool.commandPool, 1, &commandBuffer);
+}
+
 void Imgine_CommandBufferManager::Cleanup()
 {
     pool.Cleanup();
     renderFinished.Cleanup();
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+    {
+        renderFinishedSemaphores[i].Cleanup();
+    }
+}
+
+void createBuffer(Imgine_Vulkan* instance,VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory)
+{
+    VkDevice device = instance->GetDevice();
+    VkPhysicalDevice physicaldevice = instance->GetPhysicalDevice();
+
+    VkBufferCreateInfo bufferInfo{};
+    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    bufferInfo.size = size;
+    bufferInfo.usage = usage;
+    bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    if (vkCreateBuffer(instance->GetDevice(), &bufferInfo, nullptr, &buffer) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create buffer!");
+    }
+
+    VkMemoryRequirements memRequirements;
+    vkGetBufferMemoryRequirements(device, buffer, &memRequirements);
+
+    VkMemoryAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo.allocationSize = memRequirements.size;
+    allocInfo.memoryTypeIndex = findMemoryType(physicaldevice,memRequirements.memoryTypeBits, properties);
+
+    if (vkAllocateMemory(device, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS) {
+        throw std::runtime_error("failed to allocate buffer memory!");
+    }
+
+    vkBindBufferMemory(device, buffer, bufferMemory, 0);
+}
+
+/// <summary>
+/// Copy src buffer to destination, submit and wait, immediate resolve, for queue to resolve
+/// </summary>
+/// <param name="instance"></param>
+/// <param name="srcBuffer"></param>
+/// <param name="dstBuffer"></param>
+/// <param name="size"></param>
+void copyBuffer(Imgine_Vulkan* instance,VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
+{
+    VkCommandBuffer commandBuffer = instance->commandBufferManager.beginSingleTimeCommand();
+
+    VkBufferCopy copyRegion{};
+    copyRegion.size = size;
+    vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+
+
+    instance->commandBufferManager.endSingleTimeCommand(instance->graphicsQueue, commandBuffer);
 }

@@ -10,7 +10,10 @@
 
 struct Imgine_VulkanRenderPass;
 struct Imgine_SwapChain;
+struct Imgine_CommandBufferManager;
 
+void createBuffer(Imgine_Vulkan* instance, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+void copyBuffer(Imgine_Vulkan* instance, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
 struct Imgine_CommandBuffer : public Imgine_VulkanInstanceBind {
 public:
@@ -24,6 +27,7 @@ public:
 
 
 struct Imgine_CommandBufferPool : public Imgine_VulkanInstanceBind {
+    friend Imgine_CommandBufferManager;
 public:
     Imgine_CommandBufferPool() = delete;
     Imgine_CommandBufferPool(Imgine_Vulkan* instance) :Imgine_VulkanInstanceBind(instance) {}
@@ -45,6 +49,13 @@ struct Imgine_CommandBufferManager : public Imgine_VulkanInstanceBind
     Imgine_CommandBufferManager(Imgine_Vulkan* _instance) : Imgine_VulkanInstanceBind(_instance), pool(_instance), renderFinished(_instance) {}
     Imgine_CommandBufferPool pool;
     Imgine_VulkanSemaphore renderFinished;
+
+    VkCommandBuffer beginSingleTimeCommand();
+    void endSingleTimeCommand(VkQueue queue, VkCommandBuffer commandBuffer);
+
+    VkCommandPool getCommandPool() { return pool.commandPool; }
+    std::vector<Imgine_VulkanSemaphore> renderFinishedSemaphores;
+
     void Cleanup();
 };
 

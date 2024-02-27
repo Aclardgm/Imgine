@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.4)
 
-###Project Configuration 
+### Project Configuration 
 project(Imgine VERSION 0.0.0 LANGUAGES CXX)
 
 
@@ -11,7 +11,7 @@ set(CMAKE_GENERATOR_PLATFORM x64)
 include(FetchContent)
 set(FETCHCONTENT_BASE_DIR ${PROJECT_SOURCE_DIR}/libs CACHE PATH "Missing description." FORCE)
 
-### Fetch GLFW
+### Fetch GLFW ########################################################################################
 FetchContent_Declare(
 	glfw
 	GIT_REPOSITORY	https://github.com/glfw/glfw.git 
@@ -33,7 +33,7 @@ endif()
 
 
 
-### Fetch GLM
+### Fetch GLM ########################################################################################
 FetchContent_Declare(
 	glm
 	GIT_REPOSITORY	https://github.com/g-truc/glm.git
@@ -43,7 +43,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(glm)
 
 
-### Fetch ASSIMP
+### Fetch ASSIMP ########################################################################################
 FetchContent_Declare(
     assimp
     GIT_REPOSITORY https://github.com/assimp/assimp.git
@@ -58,7 +58,7 @@ FetchContent_MakeAvailable(assimp)
 
 
 
-### Fetch FLECS (Entity Component System)
+### Fetch FLECS (Entity Component System) ########################################################################################
 FetchContent_Declare(
     flecs
     GIT_REPOSITORY https://github.com/SanderMertens/flecs.git
@@ -68,7 +68,7 @@ FetchContent_MakeAvailable(flecs)
 
 
 
-### Fetch ImGUI (UI Lib) 
+### Fetch ImGUI (UI Lib)  ########################################################################################
 FetchContent_Declare(
     imgui
     GIT_REPOSITORY https://github.com/ocornut/imgui.git
@@ -77,17 +77,20 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(imgui)
 
 
-##FetchContent_GetProperties(imgui)
-# if (NOT imgui_POPULATED)
-    # FetchContent_Populate(imgui)
-    # set(IMGUI_INCLUDE_DIR ${imgui_SOURCE_DIR}/)
-    # file(GLOB IMGUI_SOURCES ${imgui_SOURCE_DIR}/*.cpp)
-    # file(GLOB IMGUI_HEADERS ${imgui_SOURCE_DIR}/*.h)
-    # add_library(imgui STATIC ${IMGUI_SOURCES} ${IMGUI_SOURCES} ${imgui_SOURCE_DIR}/examples/imgui_impl_glfw.cpp ${imgui_SOURCE_DIR}/examples/imgui_impl_vulkan.cpp)
-    # add_definitions(-DIMGUI_IMPL_OPENGL_LOADER_GLAD)
-     # target_include_directories(imgui PUBLIC ${IMGUI_INCLUDE_DIR} ${OPENGL_INCLUDE_DIR} ${GLFW_INCLUDE_DIR} ${GLAD_INCLUDE_DIR})
-    # target_link_libraries(imgui ${OPENGL_LIBRARIES} glfw glad)
-# endif ()
+### Fetch Vulkan Memory Allocator  ########################################################################################
+FetchContent_Declare(
+    vma
+    GIT_REPOSITORY https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
+    GIT_TAG v3.0.1
+)
+
+FetchContent_GetProperties(vma)
+if(NOT vma_POPULATED)
+  FetchContent_Populate(vma)
+endif()
+
+
+
 
 set(IMGUI_SOURCE_FILES 
                 ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp 
@@ -100,30 +103,34 @@ set(IMGUI_SOURCE_FILES
 )
 
 
-### Fetch STB (Image write and Load)
-# FetchContent_Declare(
-#     stb
-#     GIT_REPOSITORY https://github.com/nothings/stb.git
-#     GIT_TAG v1.90.3 
-# )
-# FetchContent_MakeAvailable(stb)
 
 
 
 
 
-### Fetch Boost
+### Fetch Boost ########################################################################################
 # set(Boost_USE_STATIC_LIBS        ON)  # only find static libs
 # set(Boost_USE_DEBUG_LIBS        OFF)  # ignore debug libs and
 # set(Boost_USE_RELEASE_LIBS       ON)  # only find release libs
 # set(Boost_USE_MULTITHREADED      ON)
 # set(Boost_USE_STATIC_RUNTIME    OFF)
 # find_package(Boost 1.84.0)
+set(BOOST_LIBS 
+Boost::boost
+Boost::headers 
+Boost::atomic 
+Boost::chrono 
+Boost::container 
+Boost::date_time 
+Boost::exception 
+Boost::regex 
+Boost::system 
+Boost::thread)
 
 
-### Fetch Boost
 Include(FetchContent)
 
+### Fetch Catch2 ########################################################################################
 FetchContent_Declare(
   Catch2
   GIT_REPOSITORY https://github.com/catchorg/Catch2.git
@@ -136,14 +143,12 @@ FetchContent_MakeAvailable(Catch2)
 find_package(Vulkan REQUIRED)
 
 
-### Main App
-set(SOURCE_FILES 
-				src/imgine_glfw.cpp
-				src/imgine_vulkan.cpp
-				src/imgine_window.cpp
-				src/imgine_app.cpp
-				src/main.cpp 
-)
+### Main App ########################################################################################
+
+file(GLOB SOURCE_FILES
+		"src/*.cpp"
+		"include/*.h")
+
 
 add_executable(${PROJECT_NAME} 
                 ${IMGUI_SOURCE_FILES}
@@ -162,23 +167,13 @@ target_include_directories(
     libs/imgui-src/backends
     libs/flecs-src
 	boost/boost_1_82_0
+	${vma_SOURCE_DIR}/src
     include/stb
 	include/
 )
 
 
 
-set(BOOST_LIBS 
-Boost::boost
-Boost::headers 
-Boost::atomic 
-Boost::chrono 
-Boost::container 
-Boost::date_time 
-Boost::exception 
-Boost::regex 
-Boost::system 
-Boost::thread)
 
 set(LIBS
 ${BOOST_LIBS}
@@ -188,17 +183,18 @@ glm
 assimp 
 flecs::flecs_static 
 Vulkan::Vulkan 
-Catch2::Catch2WithMain)
+Catch2::Catch2WithMain
+vma)
 
 
-### Links Main App
+### Links Main App ########################################################################################
 target_link_libraries(${PROJECT_NAME} glfw ${GLFW_LIBRARIES})
 target_link_libraries(${PROJECT_NAME} glm assimp flecs::flecs_static Vulkan::Vulkan Catch2::Catch2WithMain)
 
 
 
 
-### Tests 
+### Tests  ########################################################################################
 set(TEST_PROJECT_NAME "TESTS_${PROJECT_NAME}")
 set(TESTS_SOURCE_FILES src/tests/imgine_jobysystem_test.cpp)
 add_executable(${TEST_PROJECT_NAME} 
@@ -225,7 +221,9 @@ target_link_libraries(${TEST_PROJECT_NAME} glm assimp flecs::flecs_static Vulkan
 
 
 
-## Compile shaders
+## Compile shaders #######################################################################
+
+
 ###if (${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "AMD64")
 ###else()
 ###  set(GLSL_VALIDATOR "$ENV{VULKAN_SDK}/Bin32/glslc.exe")
@@ -263,30 +261,3 @@ add_custom_command(TARGET ${TEST_PROJECT_NAME} POST_BUILD
         "${PROJECT_BINARY_DIR}/shaders"
         "$<TARGET_FILE_DIR:${TEST_PROJECT_NAME}>/shaders"
 )
-
-
-
-
-
-
-# ### Dowload Submodules
-# find_package(Git QUIET)
-# if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
-# #Update submodules as needed
-#     option(GIT_SUBMODULE "Check submodules during build" ON)
-#     if(GIT_SUBMODULE)
-#         message(STATUS "Submodule update")
-#         execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive
-#                         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-#                         RESULT_VARIABLE GIT_SUBMOD_RESULT)
-#         if(NOT GIT_SUBMOD_RESULT EQUAL "0")
-#             message(FATAL_ERROR "git submodule update --init failed with ${GIT_SUBMOD_RESULT}, please checkout submodules")
-#         endif()
-#     endif()
-# endif()
-
-
-# # CHECK ALL SUBMODULES
-# if(NOT EXISTS "${PROJECT_SOURCE_DIR}/external/glfw/CMakeLists.txt")
-#     message(FATAL_ERROR "glfw submodules was not dowloaded ! GIT_SUBMODULE was turned off or failed")
-# endif()

@@ -1,15 +1,15 @@
 #include "imgine_vulkanpipeline.h"
 #include "imgine_vulkan.h"
 
-void Imgine_VulkanPipeline::Cleanup()
+
+void Imgine_VulkanPipeline::Cleanup(VkPipelineLayout layout)
 {
     VkDevice device = GetVulkanInstanceBind()->GetDevice();
     vkDestroyPipeline(device, graphicsPipeline, nullptr);
-    vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+    vkDestroyPipelineLayout(device, layout, nullptr);
 }
 
-
-void Imgine_VulkanPipeline::createGraphicsPipeline() {
+void Imgine_VulkanPipeline::createGraphicsPipeline(Imgine_VulkanLayout* layout) {
 
     auto vertShaderCode = readFile("shaders/shader_base.vert.spv");
     auto fragShaderCode = readFile("shaders/shader_base.frag.spv");
@@ -39,8 +39,15 @@ void Imgine_VulkanPipeline::createGraphicsPipeline() {
     // Vertex Data format passed to vertex shader
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertexInputInfo.vertexBindingDescriptionCount = 0;
-    vertexInputInfo.vertexAttributeDescriptionCount = 0;
+
+    auto bindingDescription = Vertex::getBindingDescription();
+    auto attributeDescriptions = Vertex::getAttributeDescriptions();
+
+    vertexInputInfo.vertexBindingDescriptionCount = 1;
+    vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
+    vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+    vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
+
 
     // Geometry topology drawn
     VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
@@ -60,7 +67,7 @@ void Imgine_VulkanPipeline::createGraphicsPipeline() {
     rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
     rasterizer.lineWidth = 1.0f;
     rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-    rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+    rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     rasterizer.depthBiasEnable = VK_FALSE;
 
     VkPipelineMultisampleStateCreateInfo multisampling{};
@@ -94,10 +101,10 @@ void Imgine_VulkanPipeline::createGraphicsPipeline() {
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 0;
-    pipelineLayoutInfo.pushConstantRangeCount = 0;
+    pipelineLayoutInfo.setLayoutCount = 1;
+    pipelineLayoutInfo.pSetLayouts = layout->DescriptorSetLayout.layouts.data();
 
-    if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
+    if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &layout->PipelineLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create pipeline layout!");
     }
 
@@ -114,7 +121,7 @@ void Imgine_VulkanPipeline::createGraphicsPipeline() {
     pipelineInfo.pMultisampleState = &multisampling;
     pipelineInfo.pColorBlendState = &colorBlending;
     pipelineInfo.pDynamicState = &dynamicState;
-    pipelineInfo.layout = pipelineLayout;
+    pipelineInfo.layout = layout->PipelineLayout;
     pipelineInfo.renderPass = GetVulkanInstanceBind()->renderPass->renderPass;
     pipelineInfo.subpass = 0;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;

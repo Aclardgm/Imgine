@@ -15,12 +15,18 @@ struct WindowData
 
 struct Imgine_GLFWWindow 
 {
+    bool framebufferResized = false;
 public:
 	GLFWwindow* GLFWWindow;
     int SetupWindow(WindowData data);
-    void createSurface(VkDevice device);
     void Cleanup();
     GLFWwindow* getWindow() { return GLFWWindow; };
+    static void frameBufferResizeCallback(GLFWwindow* window, int width, int height) {
+        auto app = reinterpret_cast<Imgine_GLFWWindow*>(glfwGetWindowUserPointer(window));
+        app->framebufferResized = true;
+    }
+    void GetWindowSize(int* width, int* height);
+
 };
 
 

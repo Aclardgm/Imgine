@@ -12,14 +12,29 @@
 #include "imgine_vulkanfence.h"
 #include "imgine_vulkanimage.h"
 #include "imgine_vulkanpipeline.h"
+#include "imgine_vulkandescriptorsets.h"
+#include "imgine_vulkanressources.h"
+#include "imgine_assetloader.h"
 
-
+const int MAX_FRAMES_IN_FLIGHT = 2;
 struct GLFWwindow;
+
+
 
 struct Imgine_Vulkan
 {
 public:
-    Imgine_Vulkan() : swapChain(this), pipeline(this), renderPassManager(this), commandBufferManager(this), fenceManager(this) {}
+    //
+    Imgine_Vulkan() :
+        layout(this),
+        swapChain(this),
+        pipeline(this),
+        renderPassManager(this),
+        commandBufferManager(this),
+        fenceManager(this),
+        uniformBuffer(this),
+        uniformDescriptorSets(this),
+        descriptorPool(this) {}
     void initVulkan(GLFWwindow* window);
     void Cleanup();
     void Draw();
@@ -48,14 +63,48 @@ public:
     Imgine_VulkanRenderPass* renderPass = nullptr;
     Imgine_VulkanRenderPassManager renderPassManager;
 
+    //Pipeline & Descriptor Layouts
+    Imgine_VulkanLayout layout;
 
-    //Command Buffer/Pool
+    //UBO
+    Imgine_VulkanUniformBuffer uniformBuffer;
+    Imgine_VulkanDescriptorSets uniformDescriptorSets;
+    Imgine_VulkanDescriptorPool descriptorPool;
+    VkDescriptorSetLayout* descriptorSetLayout;
+
+
+    //Command Buffers
     Imgine_CommandBufferManager commandBufferManager;
-    Imgine_CommandBuffer* commandBuffer = nullptr;
+    std::vector<Imgine_CommandBuffer*> commandBuffers;
+
 
     //Fence Manager
     Imgine_VulkanFenceManager fenceManager;
-    Imgine_VulkanFence* fence = nullptr;
+    std::vector<Imgine_VulkanFence*> fences;
+
+    uint32_t currentFrame = 0;
+
+
+    const std::vector<Vertex> vertices = {
+    {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+    {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+    {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+    {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+    };
+    const std::vector<uint16_t> indices = {
+    0, 1, 2, 2, 3, 0
+    };
+
+    //Vertex data
+    VkBuffer vertexBuffer;
+    VkDeviceMemory vertexBufferMemory;
+
+    //Index data
+    VkBuffer indexBuffer;
+    VkDeviceMemory indexBufferMemory;
+
+    VkImage image;
+    VkDeviceMemory imageBufferMemory;
 
 
 private:
@@ -80,22 +129,23 @@ private:
     void createInstance();
     void createGLFWSurface(GLFWwindow* window);
     void createSyncObjects();
+    void createVertexBuffer();
+    void createIndexBuffer();
+    void createTextureImage();
+    
+    /// <summary>
+    /// TODO : create a new swapChain, store current in oldSwapChain of VkSwapchainCreateInfoKHR, delete old as soon as useless
+    /// to keep drawing with old while starting drawing with new
+    /// </summary>
+    /// <param name="device"></param>
+    /// <returns></returns>
+    void recreateSwapChain();
+    void cleanupSwapChain();
 
     bool isDeviceSuitable(VkPhysicalDevice device);
     bool checkDeviceExtensionSupport(VkPhysicalDevice device);
 };
 
-
-/// Helpers
-static inline VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData);
-static inline void check_vk_result(VkResult err);
-inline VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
-inline void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator);
-inline bool checkValidationLayerSupport(const std::vector<const char*>& validationLayers);
-inline void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
-VkFormat findSupportedFormat(VkPhysicalDevice& physicalDevice, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
-VkFormat findDepthFormat(VkPhysicalDevice& physicalDevice);
-uint32_t findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
 
 #endif

@@ -3,7 +3,9 @@
 #include "imgine_vulkan.h"
 #include "imgine_vulkancommandbuffer.h"
 #include "imgine_vulkanswapchain.h"
-
+#include "imgine_vulkandescriptorsets.h"
+#include "imgine_vulkanressources.h"
+#include "imgine_vulkanpipeline.h"
 
 Imgine_VulkanRenderPass* Imgine_VulkanRenderPassManager::CreateRenderPass(Imgine_SwapChain* swapChain) {
 
@@ -12,6 +14,13 @@ Imgine_VulkanRenderPass* Imgine_VulkanRenderPassManager::CreateRenderPass(Imgine
     renderPasses.push_back(renderpass);
 
     return renderpass;
+}
+
+void Imgine_VulkanRenderPassManager::Cleanup()
+{
+    for (Imgine_VulkanRenderPass* rd : renderPasses) {
+        delete rd;
+    }
 }
 
 
@@ -66,11 +75,22 @@ void Imgine_VulkanRenderPassManager::BeginRenderPass(
     Imgine_VulkanRenderPass* renderPass,
     Imgine_CommandBuffer* commandBuffer,
     Imgine_SwapChain* swapChain,
-    uint32_t imageIndex) {
+    Imgine_VulkanLayout* layout,
+    Imgine_VulkanDescriptorSets* descSets,
+    VkBuffer vertexBuffer,
+    uint32_t vertexBufferSize,
+    VkBuffer indexBuffer,
+    uint32_t indexBufferSize,
+    uint32_t imageIndex,
+    uint32_t currentFrame) {
+
+    VkCommandBuffer cmdBuffer = commandBuffer->commandBuffer;
+
     commandBuffer->BeginRenderPass(renderPass, swapChain, imageIndex);
 
-    vkCmdBindPipeline(commandBuffer->commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, GetVulkanInstanceBind()->pipeline.graphicsPipeline);
-
+    vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, GetVulkanInstanceBind()->pipeline.graphicsPipeline);
+    
+    
     VkViewport viewport{};
     viewport.x = 0.0f;
     viewport.y = 0.0f;
@@ -78,22 +98,28 @@ void Imgine_VulkanRenderPassManager::BeginRenderPass(
     viewport.height = (float)swapChain->swapChainExtent.height;
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
-    vkCmdSetViewport(commandBuffer->commandBuffer, 0, 1, &viewport);
+    vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
 
     VkRect2D scissor{};
     scissor.offset = { 0, 0 };
     scissor.extent = swapChain->swapChainExtent;
-    vkCmdSetScissor(commandBuffer->commandBuffer, 0, 1, &scissor);
+    vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
 
+    VkBuffer vertexBuffers[] = { vertexBuffer };
+    VkDeviceSize offsets[] = { 0 };
+    vkCmdBindVertexBuffers(cmdBuffer, 0, 1, vertexBuffers, offsets);
 
-    vkCmdDraw(commandBuffer->commandBuffer, 3, 1, 0, 0);
+    vkCmdBindIndexBuffer(cmdBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
-    vkCmdEndRenderPass(commandBuffer->commandBuffer);
+    vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, layout->PipelineLayout, 0, 1, &descSets->descriptorSets[currentFrame], 0, nullptr);
 
-    if (vkEndCommandBuffer(commandBuffer->commandBuffer) != VK_SUCCESS) {
+    vkCmdDrawIndexed(cmdBuffer, indexBufferSize, 1, 0, 0, 0);
+    
+    vkCmdEndRenderPass(cmdBuffer);
+
+    if (vkEndCommandBuffer(cmdBuffer) != VK_SUCCESS) {
         throw std::runtime_error("failed to record command buffer!");
     }
-
 }
 void Imgine_VulkanRenderPassManager::EndRenderPass(Imgine_CommandBuffer* commandBuffer) {
     commandBuffer->EndRenderPass();

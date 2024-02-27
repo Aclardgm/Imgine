@@ -10,17 +10,13 @@
 #include "imgine_window.h"
 
 
-
-struct Imgine_Vulkan;
-struct Imgine_GLFWWindow;
-
-
 class Imgine_Application
 {
 public:
 
     Imgine_Vulkan Vulkan;
     Imgine_GLFWWindow Window;
+    
 
     void run();
     Imgine_Application() { }

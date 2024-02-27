@@ -46,25 +46,22 @@
 // more user-friendly ones.
 //
 // Paletted PNG, BMP, GIF, and PIC images are automatically depalettized.
-void STBImport(std::string str)
+stbi_uc* stb_Import(std::string str,int& width,int& height, int& colorDefinition)
 {
-	int width, height, colorDefinition;
-	    unsigned char *data = stbi_load(str.c_str(), &width, &height, &colorDefinition, 0);
+    stbi_uc* pixels = stbi_load(str.c_str(), &width, &height, &colorDefinition, STBI_rgb_alpha);
+    VkDeviceSize imageSize = width * height * 4;
 
-		if (data != NULL)
-		{
-			//Process
+    if (!pixels) {
+        throw std::runtime_error("failed to load texture image!");
+    }
 
-		}
-		else
-		{
-			std::cout << "Failed loading " + str + "file !" << std::endl;
-		}
-
-
-	    stbi_image_free(data);
+	stbi_image_free(pixels);
 }
 
+void stb_Free(stbi_uc* target)
+{
+    stbi_image_free(target);
+}
 
 
 

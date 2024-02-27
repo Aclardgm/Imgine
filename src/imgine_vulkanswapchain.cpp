@@ -2,6 +2,7 @@
 #include "imgine_vulkan.h"
 #include "imgine_glfw.h"
 #include "imgine_app.h"
+#include "imgine_vulkanhelpers.h"
 #include <algorithm>
 
 
@@ -120,6 +121,7 @@ void Imgine_SwapChain::createSwapChain(VkSurfaceKHR surface)
     createInfo.imageExtent = extent;
     createInfo.imageArrayLayers = 1;
     createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    
 
     Imgine_QueueFamilyIndices indices = findQueueFamilies(GetVulkanInstanceBind()->GetPhysicalDevice(), surface);
     uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
@@ -157,13 +159,12 @@ void Imgine_SwapChain::createSwapChain(VkSurfaceKHR surface)
 void Imgine_SwapChain::CleanupFrameBuffers() {
 
     VkDevice device = GetVulkanInstanceBind()->GetDevice();
-
     for (auto framebuffer : swapChainFramebuffers) {
         vkDestroyFramebuffer(device, framebuffer, nullptr);
     }
-
 }
-void Imgine_SwapChain::CleanupSwapChain() {
+void Imgine_SwapChain::Cleanup() {
+    CleanupFrameBuffers();
     VkDevice device = GetVulkanInstanceBind()->GetDevice();
 
     for (auto imageView : swapChainImageViews) {
@@ -171,14 +172,26 @@ void Imgine_SwapChain::CleanupSwapChain() {
     }
 
     vkDestroySwapchainKHR(device, swapChain, nullptr);
-    imageAcquired.Cleanup();
+
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+    {
+        imageAquiredSemaphores[i].Cleanup();
+    }
+}
+
+void Imgine_SwapChain::CleanupSwapChain()
+{
+    VkDevice device = GetVulkanInstanceBind()->GetDevice();
+    CleanupFrameBuffers();
+    for (auto imageView : swapChainImageViews) {
+        vkDestroyImageView(device, imageView, nullptr);
+    }
+    vkDestroySwapchainKHR(device, swapChain, nullptr);
 }
 
 bool Imgine_QueueFamilyIndices::isComplete()
 {
-    {
-        return graphicsFamily.has_value() && presentFamily.has_value();
-    }
+    return graphicsFamily.has_value() && presentFamily.has_value();
 }
 
 
@@ -252,15 +265,13 @@ VkSurfaceFormatKHR Imgine_SwapChain::chooseSwapSurfaceFormat(const std::vector<V
 }
 VkPresentModeKHR Imgine_SwapChain::chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes)
 {
-    {
-        for (const auto& availablePresentMode : availablePresentModes) {
-            if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
-                return availablePresentMode;
-            }
+    for (const auto& availablePresentMode : availablePresentModes) {
+        if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
+            return availablePresentMode;
         }
-
-        return VK_PRESENT_MODE_FIFO_KHR;
     }
+
+    return VK_PRESENT_MODE_FIFO_KHR;
 }
 VkExtent2D Imgine_SwapChain::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities)
 {
@@ -269,7 +280,7 @@ VkExtent2D Imgine_SwapChain::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& ca
     }
     else {
         int width, height;
-        glfwGetFramebufferSize(Imgine_Application::getInstance()->Window.GLFWWindow, &width, &height);
+        Imgine_Application::getInstance()->Window.GetWindowSize(&width, &height);
 
         VkExtent2D actualExtent = {
             static_cast<uint32_t>(width),
