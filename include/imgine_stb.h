@@ -54,8 +54,7 @@ stbi_uc* stb_Import(std::string str,int& width,int& height, int& colorDefinition
     if (!pixels) {
         throw std::runtime_error("failed to load texture image!");
     }
-
-	stbi_image_free(pixels);
+    return pixels;
 }
 
 void stb_Free(stbi_uc* target)

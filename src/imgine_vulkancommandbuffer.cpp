@@ -137,38 +137,84 @@ void Imgine_CommandBufferManager::Cleanup()
     }
 }
 
-void createBuffer(Imgine_Vulkan* instance,VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory)
-{
-    VkDevice device = instance->GetDevice();
-    VkPhysicalDevice physicaldevice = instance->GetPhysicalDevice();
 
+
+/// <summary>
+/// VMA_MEMORY_USAGE_CPU_ONLY
+/// </summary>
+/// <param name="instance"></param>
+/// <param name="size"></param>
+/// <param name="usage"></param>
+/// <param name="buffer"></param>
+/// <param name="allocation"></param>
+void createTemporaryBuffer(Imgine_Vulkan* instance, VkDeviceSize size, VkBufferUsageFlags usage, VkBuffer& buffer,VmaAllocation& allocation)
+{
     VkBufferCreateInfo bufferInfo{};
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     bufferInfo.size = size;
     bufferInfo.usage = usage;
     bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-    if (vkCreateBuffer(instance->GetDevice(), &bufferInfo, nullptr, &buffer) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create buffer!");
-    }
+    VmaAllocationCreateInfo allocInfo = {};
+    allocInfo.usage = VMA_MEMORY_USAGE_CPU_ONLY;
 
-    VkMemoryRequirements memRequirements;
-    vkGetBufferMemoryRequirements(device, buffer, &memRequirements);
-
-    VkMemoryAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocInfo.allocationSize = memRequirements.size;
-    allocInfo.memoryTypeIndex = findMemoryType(physicaldevice,memRequirements.memoryTypeBits, properties);
-
-    if (vkAllocateMemory(device, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS) {
-        throw std::runtime_error("failed to allocate buffer memory!");
-    }
-
-    vkBindBufferMemory(device, buffer, bufferMemory, 0);
+    vmaCreateBuffer(instance->allocator, &bufferInfo, &allocInfo, &buffer, &allocation, nullptr);
 }
 
 /// <summary>
-/// Copy src buffer to destination, submit and wait, immediate resolve, for queue to resolve
+/// VMA_MEMORY_USAGE_GPU_ONLY
+/// </summary>
+/// <param name="instance"></param>
+/// <param name="size"></param>
+/// <param name="usage"></param>
+/// <param name="buffer"></param>
+/// <param name="allocation"></param>
+void createBuffer(Imgine_Vulkan* instance, VkDeviceSize size, VkBufferUsageFlags usage, VkBuffer& buffer, VmaAllocation& allocation)
+{
+    VkBufferCreateInfo bufferInfo{};
+    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    bufferInfo.size = size;
+    bufferInfo.usage = usage;
+    bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    VmaAllocationCreateInfo allocInfo = {};
+    allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+
+
+    vmaCreateBuffer(instance->allocator, &bufferInfo, &allocInfo, &buffer, &allocation, nullptr);
+}
+
+/// <summary>
+/// vmausage = VMA_MEMORY_USAGE_AUTO_PREFER_HOST
+/// vmaflags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
+/// </summary>
+/// <param name="instance"></param>
+/// <param name="size"></param>
+/// <param name="usage"></param>
+/// <param name="buffer"></param>
+/// <param name="allocation"></param>
+void createUniformBuffer(Imgine_Vulkan* instance, VkDeviceSize size, VkBufferUsageFlags usage, VkBuffer& buffer, VmaAllocation& allocation)
+{
+    VkBufferCreateInfo bufferInfo{};
+    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    bufferInfo.size = size;
+    bufferInfo.usage = usage;
+    bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    VmaAllocationCreateInfo allocInfo = {};
+    allocInfo.usage = VMA_MEMORY_USAGE_AUTO_PREFER_HOST;
+    allocInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
+
+    vmaCreateBuffer(instance->allocator, &bufferInfo, &allocInfo, &buffer, &allocation, nullptr);
+}
+
+void destroyBuffer(Imgine_Vulkan* instance, VkBuffer buffer, VmaAllocation allocation) {
+    vmaDestroyBuffer(instance->allocator, buffer, allocation);
+}
+
+
+/// <summary>
+/// Copy src buffer to destination, submit and wait for queue to resolve immediatly
 /// </summary>
 /// <param name="instance"></param>
 /// <param name="srcBuffer"></param>
@@ -179,9 +225,10 @@ void copyBuffer(Imgine_Vulkan* instance,VkBuffer srcBuffer, VkBuffer dstBuffer, 
     VkCommandBuffer commandBuffer = instance->commandBufferManager.beginSingleTimeCommand();
 
     VkBufferCopy copyRegion{};
+    copyRegion.srcOffset = 0;
+    copyRegion.dstOffset = 0;
     copyRegion.size = size;
     vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
-
 
     instance->commandBufferManager.endSingleTimeCommand(instance->graphicsQueue, commandBuffer);
 }

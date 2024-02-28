@@ -6,7 +6,7 @@
 #include "imgine_vulkaninstancebind.h"
 #include <vector>
 #include <vulkan/vulkan.h>
-
+#include "imgine_vulkanmemoryallocator.h"
 
 
 struct Imgine_VulkanTexture {
@@ -29,7 +29,8 @@ public:
 	void Update(VkExtent2D extent, uint32_t imageIndex);
 
 	std::vector<VkBuffer> uniformBuffers;
-	std::vector<VkDeviceMemory> uniformBuffersMemory;
+	//std::vector<VkDeviceMemory> uniformBuffersMemory;
+	std::vector<VmaAllocation> uniformBuffersAllocation;
 	std::vector<void*> uniformBuffersMapped;
 };
 

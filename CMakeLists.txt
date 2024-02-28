@@ -77,6 +77,17 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(imgui)
 
 
+set(IMGUI_SOURCE_FILES 
+                ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp 
+                ${imgui_SOURCE_DIR}/backends/imgui_impl_vulkan.cpp 
+                ${imgui_SOURCE_DIR}/imgui.cpp 
+                ${imgui_SOURCE_DIR}/imgui_draw.cpp 
+                ${imgui_SOURCE_DIR}/imgui_demo.cpp 
+                ${imgui_SOURCE_DIR}/imgui_tables.cpp 
+                ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+)
+
+
 ### Fetch Vulkan Memory Allocator  ########################################################################################
 FetchContent_Declare(
     vma
@@ -88,19 +99,9 @@ FetchContent_GetProperties(vma)
 if(NOT vma_POPULATED)
   FetchContent_Populate(vma)
 endif()
+FetchContent_MakeAvailable(vma)
 
 
-
-
-set(IMGUI_SOURCE_FILES 
-                ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp 
-                ${imgui_SOURCE_DIR}/backends/imgui_impl_vulkan.cpp 
-                ${imgui_SOURCE_DIR}/imgui.cpp 
-                ${imgui_SOURCE_DIR}/imgui_draw.cpp 
-                ${imgui_SOURCE_DIR}/imgui_demo.cpp 
-                ${imgui_SOURCE_DIR}/imgui_tables.cpp 
-                ${imgui_SOURCE_DIR}/imgui_widgets.cpp
-)
 
 
 
@@ -167,7 +168,7 @@ target_include_directories(
     libs/imgui-src/backends
     libs/flecs-src
 	boost/boost_1_82_0
-	${vma_SOURCE_DIR}/src
+	${vma_SOURCE_DIR}/include
     include/stb
 	include/
 )

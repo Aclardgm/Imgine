@@ -15,16 +15,14 @@
 #include "imgine_vulkandescriptorsets.h"
 #include "imgine_vulkanressources.h"
 #include "imgine_assetloader.h"
+#include "imgine_vulkanmemoryallocator.h"
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 struct GLFWwindow;
 
-
-
 struct Imgine_Vulkan
 {
 public:
-    //
     Imgine_Vulkan() :
         layout(this),
         swapChain(this),
@@ -98,14 +96,17 @@ public:
     //Vertex data
     VkBuffer vertexBuffer;
     VkDeviceMemory vertexBufferMemory;
+    VmaAllocation vertexBufferAllocation;
 
     //Index data
     VkBuffer indexBuffer;
     VkDeviceMemory indexBufferMemory;
+    VmaAllocation indexBufferAllocation;
 
     VkImage image;
     VkDeviceMemory imageBufferMemory;
 
+    VmaAllocator allocator;
 
 private:
 
@@ -133,6 +134,7 @@ private:
     void createIndexBuffer();
     void createTextureImage();
     
+
     /// <summary>
     /// TODO : create a new swapChain, store current in oldSwapChain of VkSwapchainCreateInfoKHR, delete old as soon as useless
     /// to keep drawing with old while starting drawing with new

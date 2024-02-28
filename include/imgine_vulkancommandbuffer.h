@@ -6,14 +6,19 @@
 
 #include "imgine_vulkaninstancebind.h"
 #include "imgine_vulkansemaphore.h"
-
+#include "imgine_vulkanmemoryallocator.h"
 
 struct Imgine_VulkanRenderPass;
 struct Imgine_SwapChain;
 struct Imgine_CommandBufferManager;
 
-void createBuffer(Imgine_Vulkan* instance, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+/// VMA helpers
 void copyBuffer(Imgine_Vulkan* instance, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+void createBuffer(Imgine_Vulkan* instance, VkDeviceSize size, VkBufferUsageFlags usage, VkBuffer& buffer, VmaAllocation& allocation);
+void createUniformBuffer(Imgine_Vulkan* instance, VkDeviceSize size, VkBufferUsageFlags usage, VkBuffer& buffer, VmaAllocation& allocation);
+void createTemporaryBuffer(Imgine_Vulkan* instance, VkDeviceSize size, VkBufferUsageFlags usage, VkBuffer& buffer, VmaAllocation& allocation);
+void destroyBuffer(Imgine_Vulkan* instance, VkBuffer buffer, VmaAllocation allocation);
+
 
 struct Imgine_CommandBuffer : public Imgine_VulkanInstanceBind {
 public:

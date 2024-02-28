@@ -7,33 +7,31 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <chrono>
+#include "imgine_vulkanmemoryallocator.h"
 
 void Imgine_VulkanUniformBuffer::Create()
 {
     Imgine_Vulkan* vk = GetVulkanInstanceBind();
-    VkDevice device = vk->GetDevice();
 
     VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
     uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-    uniformBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
+    uniformBuffersAllocation.resize(MAX_FRAMES_IN_FLIGHT);
     uniformBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        createBuffer(vk,bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniformBuffers[i], uniformBuffersMemory[i]);
-
-        vkMapMemory(device, uniformBuffersMemory[i], 0, bufferSize, 0, &uniformBuffersMapped[i]);
+        createUniformBuffer(vk,bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,uniformBuffers[i], uniformBuffersAllocation[i]);
+        vmaMapMemory(vk->allocator, uniformBuffersAllocation[i], &(uniformBuffersMapped[i]));
     }
 }
 
 void Imgine_VulkanUniformBuffer::Cleanup()
 {
-    VkDevice device = GetVulkanInstanceBind()->GetDevice();
+    Imgine_Vulkan* vk = GetVulkanInstanceBind();
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        vkDestroyBuffer(device, uniformBuffers[i], nullptr);
-        vkFreeMemory(device, uniformBuffersMemory[i], nullptr);
+        vmaUnmapMemory(vk->allocator, uniformBuffersAllocation[i]);
+        destroyBuffer(vk, uniformBuffers[i], uniformBuffersAllocation[i]);
     }
-
 }
 
 void Imgine_VulkanUniformBuffer::Update(VkExtent2D extent,uint32_t imageIndex)

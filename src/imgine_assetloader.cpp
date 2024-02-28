@@ -6,6 +6,7 @@
 #include "imgine_vulkan.h"
 #include "imgine_vulkanressources.h"
 #include "imgine_vulkanhelpers.h"
+#include "imgine_vulkanmemoryallocator.h"
 
 
 void copyBufferToImage(
@@ -159,13 +160,19 @@ void createTextureImage(
     }
 
     VkBuffer stagingBuffer;
-    VkDeviceMemory stagingBufferMemory;
-    createBuffer(instance,imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+    VmaAllocation allocation;
+
+    createBuffer(instance,imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, stagingBuffer, allocation);
 
     void* data;
-    vkMapMemory(device, stagingBufferMemory, 0, imageSize, 0, &data);
-    memcpy(data, pixels, static_cast<size_t>(imageSize));
-    vkUnmapMemory(device, stagingBufferMemory);
+    /*
+    copyMemoryToAllocation(instance, pixels, allocation, 1);*/
+
+    //vkMapMemory(device, allocation->GetMemory(), 0, imageSize, 0, &data);
+    //memcpy(data, pixels, static_cast<size_t>(imageSize));
+    //vkUnmapMemory(device, allocation->GetMemory());
+
+    copyMappedMemorytoAllocation(instance, pixels, allocation, 1, &data);
 
     stbi_image_free(pixels);
 
@@ -175,8 +182,7 @@ void createTextureImage(
     copyBufferToImage(instance,stagingBuffer, textureImage, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
     transitionImageLayout(instance, textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-    vkDestroyBuffer(device, stagingBuffer, nullptr);
-    vkFreeMemory(device, stagingBufferMemory, nullptr);
+    destroyBuffer(instance, stagingBuffer, allocation);
 
 }
 
