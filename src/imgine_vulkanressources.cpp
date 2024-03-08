@@ -11,7 +11,7 @@
 
 void Imgine_VulkanUniformBuffer::Create()
 {
-    Imgine_Vulkan* vk = GetVulkanInstanceBind();
+    Imgine_Vulkan* vk = getVulkanInstanceBind();
 
     VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
@@ -27,7 +27,7 @@ void Imgine_VulkanUniformBuffer::Create()
 
 void Imgine_VulkanUniformBuffer::Cleanup()
 {
-    Imgine_Vulkan* vk = GetVulkanInstanceBind();
+    Imgine_Vulkan* vk = getVulkanInstanceBind();
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         vmaUnmapMemory(vk->allocator, uniformBuffersAllocation[i]);
         destroyBuffer(vk, uniformBuffers[i], uniformBuffersAllocation[i]);

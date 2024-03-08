@@ -20,7 +20,8 @@ void destroyVMAllocator(VmaAllocator allocator);
 
 template<typename T>
 void copyMappedMemorytoAllocation(Imgine_Vulkan* instance, T* src, VmaAllocation allocation, uint32_t count,void** dst);
-
+template<typename T>
+void copyMappedMemorytoAllocation(Imgine_Vulkan* instance, T* src, VmaAllocation allocation, void** dst, size_t size);
 
 #endif
 

@@ -18,14 +18,22 @@ void createBuffer(Imgine_Vulkan* instance, VkDeviceSize size, VkBufferUsageFlags
 void createUniformBuffer(Imgine_Vulkan* instance, VkDeviceSize size, VkBufferUsageFlags usage, VkBuffer& buffer, VmaAllocation& allocation);
 void createTemporaryBuffer(Imgine_Vulkan* instance, VkDeviceSize size, VkBufferUsageFlags usage, VkBuffer& buffer, VmaAllocation& allocation);
 void destroyBuffer(Imgine_Vulkan* instance, VkBuffer buffer, VmaAllocation allocation);
+void destroyImage(Imgine_Vulkan* instance, VkImage image, VmaAllocation allocation);
 
 
 struct Imgine_CommandBuffer : public Imgine_VulkanInstanceBind {
+
+
 public:
-    void Begin();
-    void End();
-    void BeginRenderPass(Imgine_VulkanRenderPass* renderPass, Imgine_SwapChain* swapChain, uint32_t imageIndex);
-    void EndRenderPass();
+    Imgine_CommandBuffer(Imgine_Vulkan* instance) : Imgine_VulkanInstanceBind(instance) {}
+
+    /// <summary>
+    /// vkBeginCommandBuffer
+    /// </summary>
+    void begin();
+    void end();
+    void beginRenderPass(Imgine_VulkanRenderPass* renderPass, Imgine_SwapChain* swapChain, uint32_t imageIndex);
+    void endRenderPass();
     VkCommandBuffer commandBuffer;
 };
 
@@ -39,9 +47,9 @@ public:
 
 
 
-    Imgine_CommandBuffer* Create();
-    void Create(VkSurfaceKHR surface);
-    void Cleanup();
+    Imgine_CommandBuffer* allocateBuffers();
+    void allocateBuffers(VkSurfaceKHR surface);
+    void cleanup();
 
 private:
     std::vector<Imgine_CommandBuffer*> commandBuffers;
@@ -51,17 +59,19 @@ private:
 struct Imgine_CommandBufferManager : public Imgine_VulkanInstanceBind
 {
     Imgine_CommandBufferManager() = delete;
-    Imgine_CommandBufferManager(Imgine_Vulkan* _instance) : Imgine_VulkanInstanceBind(_instance), pool(_instance), renderFinished(_instance) {}
-    Imgine_CommandBufferPool pool;
-    Imgine_VulkanSemaphore renderFinished;
-
+    Imgine_CommandBufferManager(Imgine_Vulkan* _instance) : Imgine_VulkanInstanceBind(_instance), pool(_instance) {}
+    
+    VkCommandPool getCommandPool() { return pool.commandPool; }
+    Imgine_CommandBufferPool& getPool() { return pool; }
+    std::vector<Imgine_VulkanSemaphore>& getSemaphores() { return renderFinishedSemaphores; }
+    
     VkCommandBuffer beginSingleTimeCommand();
     void endSingleTimeCommand(VkQueue queue, VkCommandBuffer commandBuffer);
-
-    VkCommandPool getCommandPool() { return pool.commandPool; }
+    
+    void cleanup();
+private:
+    Imgine_CommandBufferPool pool;
     std::vector<Imgine_VulkanSemaphore> renderFinishedSemaphores;
-
-    void Cleanup();
 };
 
 

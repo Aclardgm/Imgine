@@ -34,8 +34,9 @@ public:
         uniformDescriptorSets(this),
         descriptorPool(this) {}
     void initVulkan(GLFWwindow* window);
-    void Cleanup();
-    void Draw();
+    void cleanup();
+    void draw();
+
     const VkPhysicalDevice GetPhysicalDevice() const {
         return physicalDevice;
     }
@@ -83,28 +84,33 @@ public:
     uint32_t currentFrame = 0;
 
 
-    const std::vector<Vertex> vertices = {
-    {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-    {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-    {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-    {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
-    };
-    const std::vector<uint16_t> indices = {
-    0, 1, 2, 2, 3, 0
-    };
+    Imgine_Mesh mesh = Imgine_Mesh({
+            {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+            {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+            {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+            {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
 
-    //Vertex data
-    VkBuffer vertexBuffer;
-    VkDeviceMemory vertexBufferMemory;
-    VmaAllocation vertexBufferAllocation;
+            {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+            {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+            {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+            {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
+        }, 
+        {
+            0, 1, 2, 2, 3, 0,
+            4, 5, 6, 6, 7, 4
+        }
+    );
+    Imgine_VulkanModel model;
 
-    //Index data
-    VkBuffer indexBuffer;
-    VkDeviceMemory indexBufferMemory;
-    VmaAllocation indexBufferAllocation;
+    //Image data
+    Imgine_TextureRef imageRef;
+    Imgine_VulkanImageView view;
+    Imgine_VulkanImageSampler sampler;
 
-    VkImage image;
-    VkDeviceMemory imageBufferMemory;
+    //Depth data
+    Imgine_VulkanImage depthImage;
+    Imgine_VulkanImageView depthView;
+
 
     VmaAllocator allocator;
 
@@ -133,6 +139,7 @@ private:
     void createVertexBuffer();
     void createIndexBuffer();
     void createTextureImage();
+    void createDepthRessources();
     
 
     /// <summary>

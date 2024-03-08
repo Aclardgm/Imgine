@@ -1,157 +1,20 @@
 #include "imgine_assetloader.h"
+
 #include <vulkan/vulkan.h>
 #include <stdexcept>
-#include "imgine_stb.h"
 #include "imgine_vulkancommandbuffer.h"
 #include "imgine_vulkan.h"
 #include "imgine_vulkanressources.h"
-#include "imgine_vulkanhelpers.h"
-#include "imgine_vulkanmemoryallocator.h"
+#include "imgine_vulkanimage.h"
+#include "imgine_assimp.h"
+#include "imgine_types.h"
 
-
-void copyBufferToImage(
-    Imgine_Vulkan* instance, 
-    VkBuffer buffer, 
-    VkImage image, 
-    uint32_t width, 
-    uint32_t height) 
-{
-    VkCommandBuffer commandBuffer = instance->commandBufferManager.beginSingleTimeCommand();
-
-    VkBufferImageCopy region{};
-    region.bufferOffset = 0;
-    region.bufferRowLength = 0;
-    region.bufferImageHeight = 0;
-    region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    region.imageSubresource.mipLevel = 0;
-    region.imageSubresource.baseArrayLayer = 0;
-    region.imageSubresource.layerCount = 1;
-    region.imageOffset = { 0, 0, 0 };
-    region.imageExtent = {
-        width,
-        height,
-        1
-    };
-
-    vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-
-    instance->commandBufferManager.endSingleTimeCommand(instance->graphicsQueue,commandBuffer);
-}
-
-
-void transitionImageLayout(
-    Imgine_Vulkan* instance,
-    VkImage image, 
-    VkFormat format, 
-    VkImageLayout oldLayout, 
-    VkImageLayout newLayout) {
-    VkCommandBuffer commandBuffer = instance->commandBufferManager.beginSingleTimeCommand();
-
-    VkImageMemoryBarrier barrier{};
-    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    barrier.oldLayout = oldLayout;
-    barrier.newLayout = newLayout;
-    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.image = image;
-    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    barrier.subresourceRange.baseMipLevel = 0;
-    barrier.subresourceRange.levelCount = 1;
-    barrier.subresourceRange.baseArrayLayer = 0;
-    barrier.subresourceRange.layerCount = 1;
-
-    VkPipelineStageFlags sourceStage;
-    VkPipelineStageFlags destinationStage;
-
-    if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
-        barrier.srcAccessMask = 0;
-        barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-
-        sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-        destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-    }
-    else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
-        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-        barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-        sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-        destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-    }
-    else {
-        throw std::invalid_argument("unsupported layout transition!");
-    }
-
-    vkCmdPipelineBarrier(
-        commandBuffer,
-        sourceStage, destinationStage,
-        0,
-        0, nullptr,
-        0, nullptr,
-        1, &barrier
-    );
-
-    instance->commandBufferManager.endSingleTimeCommand(instance->graphicsQueue, commandBuffer);
-}
-
-
-void createImage(
-    Imgine_Vulkan* instance,
-    uint32_t width, 
-    uint32_t height, 
-    VkFormat format, 
-    VkImageTiling tiling, 
-    VkImageUsageFlags usage, 
-    VkMemoryPropertyFlags properties, 
-    VkImage& image, 
-    VkDeviceMemory& imageMemory) {
-    VkDevice device = instance->GetDevice();
-    
-    VkImageCreateInfo imageInfo{};
-    imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    imageInfo.imageType = VK_IMAGE_TYPE_2D;
-    imageInfo.extent.width = width;
-    imageInfo.extent.height = height;
-    imageInfo.extent.depth = 1;
-    imageInfo.mipLevels = 1;
-    imageInfo.arrayLayers = 1;
-    imageInfo.format = format;
-    imageInfo.tiling = tiling;
-    imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    imageInfo.usage = usage;
-    imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-    imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-    if (vkCreateImage(device, &imageInfo, nullptr, &image) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create image!");
-    }
-
-    VkMemoryRequirements memRequirements;
-    vkGetImageMemoryRequirements(device, image, &memRequirements);
-
-    VkMemoryAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocInfo.allocationSize = memRequirements.size;
-    allocInfo.memoryTypeIndex = findMemoryType(instance->GetPhysicalDevice(),memRequirements.memoryTypeBits, properties);
-
-    if (vkAllocateMemory(device, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS) {
-        throw std::runtime_error("failed to allocate image memory!");
-    }
-
-    vkBindImageMemory(device, image, imageMemory, 0);
-}
-
-
-
-void createTextureImage(
-    Imgine_Vulkan* instance,
-    std::string path,
-    VkImage& textureImage,
-    VkDeviceMemory& textureImageMemory)
+void loadImage(Imgine_Vulkan* instance,std::string path,VkImage* image, VmaAllocation* allocation)
 {
     VkDevice device = instance->GetDevice();
-	int width, height, colorDefinition;
+    int width, height, colorDefinition;
 
-	stbi_uc* pixels = stb_Import(path, width, height, colorDefinition);
+    stbi_uc* pixels = stb_Import(path, width, height, colorDefinition);
 
     VkDeviceSize imageSize = width * height * 4;
 
@@ -159,33 +22,76 @@ void createTextureImage(
         throw std::runtime_error("failed to load texture image!");
     }
 
-    VkBuffer stagingBuffer;
-    VmaAllocation allocation;
-
-    createBuffer(instance,imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, stagingBuffer, allocation);
-
-    void* data;
-    /*
-    copyMemoryToAllocation(instance, pixels, allocation, 1);*/
-
-    //vkMapMemory(device, allocation->GetMemory(), 0, imageSize, 0, &data);
-    //memcpy(data, pixels, static_cast<size_t>(imageSize));
-    //vkUnmapMemory(device, allocation->GetMemory());
-
-    copyMappedMemorytoAllocation(instance, pixels, allocation, 1, &data);
+    createTextureImage(instance, imageSize,pixels,width,height, image, allocation);
 
     stbi_image_free(pixels);
-
-    createImage(instance, width, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, textureImageMemory);
-
-    transitionImageLayout(instance, textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    copyBufferToImage(instance,stagingBuffer, textureImage, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
-    transitionImageLayout(instance, textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-    destroyBuffer(instance, stagingBuffer, allocation);
-
 }
 
-void loadImage(std::string path,VkImage)
+void loadMesh(Imgine_Vulkan* instance, std::string path, VkImage* image, VmaAllocation* allocation)
 {
+    std::vector<Imgine_Mesh> meshes;
+
+    AssimpImportScene(instance,path, meshes);
+}
+
+//Check if texture already loaded, return no value optional if not loaded
+std::optional<Imgine_TextureRef> Imgine_AssetLoader::GetTextureRef(const char* path)
+{
+    for (unsigned int j = 0; j < loadedTextures.size(); j++)
+    {
+        if (std::strcmp(loadedTextures[j].path.data(), path) == 0)
+        {
+            Imgine_TextureRef ref = { j };
+            return std::optional<Imgine_TextureRef>(ref);
+        }
+    }
+
+    return std::optional<Imgine_TextureRef>();
+}
+
+
+//Check if texture already exists, load it if not, return corresponding assetRef 
+Imgine_TextureRef Imgine_AssetLoader::loadTexture(Imgine_Vulkan* instance, const char* path,std::string typeName = "texture_diffuse")
+{
+    std::optional<Imgine_TextureRef> ref = GetTextureRef(path);
+    if (!ref.has_value())
+    {   // if texture hasn't been loaded already, load it
+        Imgine_Texture texture;
+
+        loadImage(instance, path, &texture.image.image, &texture.image.allocation);
+        texture.path = path;
+        texture.type = typeName;
+
+        loadedTextures.push_back(texture);
+        Imgine_TextureRef ref = { loadedTextures.size() - 1 };
+        return ref;
+    }
+    else {
+        return ref.value();
+    }
+}
+
+void Imgine_AssetLoader::Cleanup(Imgine_Vulkan* instance)
+{
+    for (int i = 0; i < loadedMeshes.size(); i++) {
+
+        loadedMeshes[i].Cleanup();
+    }
+    for (int i = 0; i < loadedTextures.size(); i++) {
+
+        loadedTextures[i].Cleanup(instance);
+    }
+}
+
+
+
+Imgine_TextureRef Imgine_AssetLoader::loadTexture(Imgine_Vulkan* instance, const char* path, Imgine_AssetLoader::TextureTypes type)
+{
+    return loadTexture(instance, path, TextureTypeNames[type]);
+}
+
+
+Imgine_MeshRef Imgine_AssetLoader::loadModel(const char* path)
+{
+    return Imgine_MeshRef();
 }

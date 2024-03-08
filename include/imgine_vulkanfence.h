@@ -20,18 +20,18 @@ struct Imgine_VulkanFenceManager : public Imgine_VulkanInstanceBind {
     /// Check if fences are available in freeFences, return one if so, or build new one and push it to used
     /// </summary>
     /// <returns></returns>
-    Imgine_VulkanFence* GetFence();
+    Imgine_VulkanFence* getFence();
     /// <summary>
     /// Reset given fence
     /// </summary>
     /// <param name="fence"></param>
-    void ResetFence(Imgine_VulkanFence* fence);
+    void resetFence(Imgine_VulkanFence* fence);
 
     /// <summary>
     /// Set given fence to nullptr
     /// </summary>
     /// <param name="fence"></param>
-    void ReleaseFence(Imgine_VulkanFence*& fence);
+    void releaseFence(Imgine_VulkanFence*& fence);
 
 private:
     std::vector<Imgine_VulkanFence*> freeFences;

@@ -3,41 +3,32 @@
 #ifndef ImGINE_ASSIMP
 #define ImGINE_ASSIMP
 
-#include<iostream>
+#include <iostream>
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
+#include <vector>
+
+#include "imgine_assetloader.h"
+
+struct Imgine_Mesh;
+struct Imgine_TextureRef;
+struct Imgine_Vulkan;
+
+bool AssimpImportScene(Imgine_Vulkan* instance, const std::string& pFile, std::vector<Imgine_Mesh>& meshes);
+
+// checks all material textures of a given type and loads the textures if they're not loaded yet.
+// the required info is returned as a Texture struct.
+std::vector<Imgine_TextureRef> loadMaterialTextures(
+    Imgine_Vulkan* instance, aiMaterial* mat, aiTextureType type, std::string typeName);
+
+std::vector<Imgine_TextureRef> loadMaterialTextures(
+    Imgine_Vulkan* instance, aiMaterial* mat, aiTextureType type, Imgine_AssetLoader::TextureTypes typeEnum);
 
 
+void processNode(Imgine_Vulkan* instance, aiNode* node, const aiScene* scene, std::vector<Imgine_Mesh>& meshes);
 
-
-bool AssimpImportScene(const std::string& pFile) {
-    // Create an instance of the Importer class
-    Assimp::Importer importer;
-
-
-
-    // And have it read the given file with some example postprocessing
-    // Usually - if speed is not the most important aspect for you - you'll
-    // probably to request more postprocessing than we do in this example.
-    const aiScene* scene = importer.ReadFile(pFile,
-        aiProcess_CalcTangentSpace |
-        aiProcess_Triangulate |
-        aiProcess_JoinIdenticalVertices |
-        aiProcess_SortByPType);
-
-    // If the import failed, report it
-    if (nullptr == scene) {
-        std::cout << importer.GetErrorString() << std::endl;
-        return false;
-    }
-
-    // Now we can access the file's contents.
-    //DoTheSceneProcessing(scene);
-
-    // We're done. Everything will be cleaned up by the importer destructor
-    return true;
-}
+Imgine_Mesh&& processMesh(Imgine_Vulkan* instance, aiMesh* mesh, const aiScene* scene);
 
 
 

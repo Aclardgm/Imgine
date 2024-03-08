@@ -8,8 +8,8 @@ void Imgine_Application::run()
         1280,720,"Dear ImGui GLFW + Vulkan example"
     };
 
-    Window.SetupWindow(data);
-    Vulkan.initVulkan(Window.GLFWWindow);
+    window.SetupWindow(data);
+    vulkan.initVulkan(window.GLFWWindow);
     MainLoop();
 }
 
@@ -21,21 +21,21 @@ Imgine_Application* Imgine_Application::getInstance()
 
 void Imgine_Application::MainLoop()
 {
-    while (!glfwWindowShouldClose(Window.GLFWWindow)) {
+    while (!glfwWindowShouldClose(window.GLFWWindow)) {
         glfwPollEvents();
         DrawFrame();
     }
-    vkDeviceWaitIdle(Vulkan.device);
+    vkDeviceWaitIdle(vulkan.device);
 }
 
 
 void Imgine_Application::DrawFrame()
 {
-    Vulkan.Draw();
+    vulkan.draw();
 
 }
 void Imgine_Application::Cleanup()
 {
-    Vulkan.Cleanup();
-    Window.Cleanup();
+    vulkan.cleanup();
+    window.Cleanup();
 };

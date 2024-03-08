@@ -6,7 +6,6 @@
 #include "imgine_vulkanhelpers.h"
 #include "imgine_vulkan.h"
 
-#include <stb_image.h>
 
 VmaAllocator createVMAllocator(
 	VkInstance instance,
@@ -40,12 +39,17 @@ void destroyVMAllocator(VmaAllocator allocator) {
 
 
 // Avoid link error for copyMemoryToAllocation function
-// TODO check usage if .inl files
+// TODO check usage of .inl files
 void TemporaryFunction()
 {
 	copyMappedMemorytoAllocation<stbi_uc>(nullptr, nullptr, VK_NULL_HANDLE, 0, nullptr);
 	copyMappedMemorytoAllocation<const Vertex>(nullptr, nullptr, VK_NULL_HANDLE, 0,nullptr);
+	copyMappedMemorytoAllocation<Vertex>(nullptr, nullptr, VK_NULL_HANDLE, 0, nullptr);
 	copyMappedMemorytoAllocation<const uint16_t>(nullptr, nullptr, VK_NULL_HANDLE, 0, nullptr);
+	copyMappedMemorytoAllocation<stbi_uc>(nullptr, nullptr, VK_NULL_HANDLE,  nullptr,0);
+	copyMappedMemorytoAllocation<const Vertex>(nullptr, nullptr, VK_NULL_HANDLE,  nullptr,0);
+	copyMappedMemorytoAllocation<Vertex>(nullptr, nullptr, VK_NULL_HANDLE, nullptr, 0);
+	copyMappedMemorytoAllocation<const uint16_t>(nullptr, nullptr, VK_NULL_HANDLE,  nullptr,0);
 }
 
 template<typename T>
@@ -55,6 +59,14 @@ void copyMappedMemorytoAllocation(Imgine_Vulkan* instance, T* src, VmaAllocation
 	memcpy(*dst, src, sizeof(T) * count);
 	vmaUnmapMemory(instance->allocator, allocation);
 }
+template<typename T>
+void copyMappedMemorytoAllocation(Imgine_Vulkan* instance, T* src, VmaAllocation allocation,void** dst,size_t size)
+{
+	vmaMapMemory(instance->allocator, allocation, dst);
+	memcpy(*dst, src, size);
+	vmaUnmapMemory(instance->allocator, allocation);
+}
+
 
 
 

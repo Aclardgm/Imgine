@@ -2,9 +2,9 @@
 #include "imgine_vulkan.h"
 
 
-void Imgine_VulkanPipeline::Cleanup(VkPipelineLayout layout)
+void Imgine_VulkanPipeline::cleanup(VkPipelineLayout layout)
 {
-    VkDevice device = GetVulkanInstanceBind()->GetDevice();
+    VkDevice device = getVulkanInstanceBind()->GetDevice();
     vkDestroyPipeline(device, graphicsPipeline, nullptr);
     vkDestroyPipelineLayout(device, layout, nullptr);
 }
@@ -14,7 +14,7 @@ void Imgine_VulkanPipeline::createGraphicsPipeline(Imgine_VulkanLayout* layout) 
     auto vertShaderCode = readFile("shaders/shader_base.vert.spv");
     auto fragShaderCode = readFile("shaders/shader_base.frag.spv");
 
-    VkDevice device = GetVulkanInstanceBind()->GetDevice();
+    VkDevice device = getVulkanInstanceBind()->GetDevice();
 
     //Simple wrappers for GPU execution
     VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
@@ -70,6 +70,18 @@ void Imgine_VulkanPipeline::createGraphicsPipeline(Imgine_VulkanLayout* layout) 
     rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     rasterizer.depthBiasEnable = VK_FALSE;
 
+    VkPipelineDepthStencilStateCreateInfo depthStencil{};
+    depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    depthStencil.depthTestEnable = VK_TRUE;
+    depthStencil.depthWriteEnable = VK_TRUE;
+    depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+    depthStencil.depthBoundsTestEnable = VK_FALSE;
+    depthStencil.stencilTestEnable = VK_FALSE;
+    depthStencil.minDepthBounds = 0.0f; // Optional
+    depthStencil.maxDepthBounds = 1.0f; // Optional
+    depthStencil.front = {}; // Optional
+    depthStencil.back = {}; // Optional
+
     VkPipelineMultisampleStateCreateInfo multisampling{};
     multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     multisampling.sampleShadingEnable = VK_FALSE;
@@ -101,10 +113,10 @@ void Imgine_VulkanPipeline::createGraphicsPipeline(Imgine_VulkanLayout* layout) 
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 1;
-    pipelineLayoutInfo.pSetLayouts = layout->DescriptorSetLayout.layouts.data();
+    pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(layout->descriptorSetsLayout.layouts.size());
+    pipelineLayoutInfo.pSetLayouts = layout->descriptorSetsLayout.layouts.data();
 
-    if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &layout->PipelineLayout) != VK_SUCCESS) {
+    if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &layout->pipelineLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create pipeline layout!");
     }
 
@@ -121,8 +133,9 @@ void Imgine_VulkanPipeline::createGraphicsPipeline(Imgine_VulkanLayout* layout) 
     pipelineInfo.pMultisampleState = &multisampling;
     pipelineInfo.pColorBlendState = &colorBlending;
     pipelineInfo.pDynamicState = &dynamicState;
-    pipelineInfo.layout = layout->PipelineLayout;
-    pipelineInfo.renderPass = GetVulkanInstanceBind()->renderPass->renderPass;
+    pipelineInfo.pDepthStencilState = &depthStencil;
+    pipelineInfo.layout = layout->pipelineLayout;
+    pipelineInfo.renderPass = getVulkanInstanceBind()->renderPass->renderPass;
     pipelineInfo.subpass = 0;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
@@ -130,8 +143,8 @@ void Imgine_VulkanPipeline::createGraphicsPipeline(Imgine_VulkanLayout* layout) 
         throw std::runtime_error("failed to create graphics pipeline!");
     }
 
-    vkDestroyShaderModule(GetVulkanInstanceBind()->GetDevice(), fragShaderModule, nullptr);
-    vkDestroyShaderModule(GetVulkanInstanceBind()->GetDevice(), vertShaderModule, nullptr);
+    vkDestroyShaderModule(getVulkanInstanceBind()->GetDevice(), fragShaderModule, nullptr);
+    vkDestroyShaderModule(getVulkanInstanceBind()->GetDevice(), vertShaderModule, nullptr);
 }
 
 
@@ -143,7 +156,7 @@ VkShaderModule Imgine_VulkanPipeline::createShaderModule(const std::vector<char>
     createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
 
     VkShaderModule shaderModule;
-    if (vkCreateShaderModule(GetVulkanInstanceBind()->GetDevice(), &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
+    if (vkCreateShaderModule(getVulkanInstanceBind()->GetDevice(), &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
         throw std::runtime_error("failed to create shader module!");
     }
 

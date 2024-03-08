@@ -18,10 +18,8 @@ concept SWAPCHAIN = std::is_base_of_v<Imgine_SwapChain, T>;
 struct Imgine_VulkanRenderPass : public Imgine_VulkanInstanceBind {
 public:
     //Imgine_VulkanRenderPass() {};
-    Imgine_VulkanRenderPass(Imgine_Vulkan* instance, VkRenderPass&& pass) : Imgine_VulkanInstanceBind(instance), renderPass(std::move(pass)) {}
-    void Cleanup();
-
-
+    Imgine_VulkanRenderPass(Imgine_Vulkan* instance, VkRenderPass pass) : Imgine_VulkanInstanceBind(instance), renderPass(pass) {}
+    void cleanup();
     VkRenderPass renderPass;
 };
 
@@ -31,7 +29,7 @@ struct Imgine_VulkanRenderPassBuilder : public Imgine_VulkanInstanceBind {
 
     Imgine_VulkanRenderPassBuilder() = delete;
     Imgine_VulkanRenderPassBuilder(Imgine_Vulkan* instance, SC* swapChain) : Imgine_VulkanInstanceBind(instance), swapChain(swapChain) {}
-    Imgine_VulkanRenderPass* Build();
+    Imgine_VulkanRenderPass* build();
     SC* swapChain = nullptr;
 };
 
@@ -44,7 +42,7 @@ struct Imgine_VulkanRenderPassManager : public Imgine_VulkanInstanceBind {
 
     std::vector<Imgine_VulkanRenderPass*> renderPasses;
 
-    void BeginRenderPass(
+    void beginRenderPass(
         Imgine_VulkanRenderPass* renderPass,
         Imgine_CommandBuffer* commandBuffer,
         Imgine_SwapChain* swapChain,
@@ -56,7 +54,7 @@ struct Imgine_VulkanRenderPassManager : public Imgine_VulkanInstanceBind {
         uint32_t indexBufferSize,
         uint32_t imageIndex,
         uint32_t currentFrame);
-    void EndRenderPass(Imgine_CommandBuffer* commandBuffer);
+    void endRenderPass(Imgine_CommandBuffer* commandBuffer);
     Imgine_VulkanRenderPass* CreateRenderPass(Imgine_SwapChain* swapChain);
 
 

@@ -7,14 +7,14 @@ struct Imgine_Vulkan;
 
 struct Imgine_VulkanInstanceBind {
 public:
-    Imgine_VulkanInstanceBind(Imgine_Vulkan* _instance = nullptr) : instance(_instance) {}
+    Imgine_VulkanInstanceBind(Imgine_Vulkan* _instance) : instance(_instance) {}
 
-    inline Imgine_Vulkan* GetVulkanInstanceBind() const {
+    inline Imgine_Vulkan* getVulkanInstanceBind() const {
         assert(instance != nullptr);
         return instance;
     }
 
-    inline void SetVulkanInstanceBind(Imgine_Vulkan* _instance) {
+    inline void setVulkanInstanceBind(Imgine_Vulkan* _instance) {
         instance = _instance;
     }
 

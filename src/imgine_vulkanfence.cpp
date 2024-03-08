@@ -1,7 +1,7 @@
 #include "imgine_vulkanfence.h"
 #include "imgine_vulkan.h"
 
-Imgine_VulkanFence* Imgine_VulkanFenceManager::GetFence() {
+Imgine_VulkanFence* Imgine_VulkanFenceManager::getFence() {
 
     Imgine_VulkanFence* fence = nullptr;
     if (freeFences.size() > 0) {
@@ -10,19 +10,19 @@ Imgine_VulkanFence* Imgine_VulkanFenceManager::GetFence() {
         usedFences.push_back(fence);
         return fence;
     }
-    fence = new Imgine_VulkanFence(GetVulkanInstanceBind());
+    fence = new Imgine_VulkanFence(getVulkanInstanceBind());
     usedFences.push_back(fence);
     return fence;
 }
 
 
-void Imgine_VulkanFenceManager::ResetFence(Imgine_VulkanFence* fence) {
-    vkResetFences(GetVulkanInstanceBind()->GetDevice(), 1, &fence->fence);
+void Imgine_VulkanFenceManager::resetFence(Imgine_VulkanFence* fence) {
+    vkResetFences(getVulkanInstanceBind()->GetDevice(), 1, &fence->fence);
 }
 
 
-void Imgine_VulkanFenceManager::ReleaseFence(Imgine_VulkanFence*& fence) {
-    ResetFence(fence);
+void Imgine_VulkanFenceManager::releaseFence(Imgine_VulkanFence*& fence) {
+    resetFence(fence);
 
     auto it = std::find(usedFences.begin(), usedFences.end(), fence);
     if (it != usedFences.end()) {

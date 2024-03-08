@@ -4,9 +4,9 @@
 #include "imgine_vulkan.h"
 #include "imgine_vulkanhelpers.h"
 
-Imgine_CommandBuffer* Imgine_CommandBufferPool::Create() {
+Imgine_CommandBuffer* Imgine_CommandBufferPool::allocateBuffers() {
 
-    Imgine_CommandBuffer* buffer = new Imgine_CommandBuffer();
+    Imgine_CommandBuffer* buffer = new Imgine_CommandBuffer(getVulkanInstanceBind());
 
     VkCommandBufferAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -17,7 +17,7 @@ Imgine_CommandBuffer* Imgine_CommandBufferPool::Create() {
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     allocInfo.commandBufferCount = 1;
 
-    if (vkAllocateCommandBuffers(GetVulkanInstanceBind()->GetDevice(), &allocInfo, &(buffer->commandBuffer)) != VK_SUCCESS) {
+    if (vkAllocateCommandBuffers(getVulkanInstanceBind()->GetDevice(), &allocInfo, &(buffer->commandBuffer)) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate command buffers!");
     }
     commandBuffers.push_back(buffer);
@@ -25,8 +25,8 @@ Imgine_CommandBuffer* Imgine_CommandBufferPool::Create() {
 }
 
 
-void Imgine_CommandBuffer::BeginRenderPass(Imgine_VulkanRenderPass* renderPass, Imgine_SwapChain* swapChain, uint32_t imageIndex) {
-    Begin();
+void Imgine_CommandBuffer::beginRenderPass(Imgine_VulkanRenderPass* renderPass, Imgine_SwapChain* swapChain, uint32_t imageIndex) {
+    begin();
 
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -35,14 +35,19 @@ void Imgine_CommandBuffer::BeginRenderPass(Imgine_VulkanRenderPass* renderPass, 
     renderPassInfo.renderArea.offset = { 0, 0 };
     renderPassInfo.renderArea.extent = swapChain->swapChainExtent;
 
-    VkClearValue clearColor = { {{0.0f, 0.0f, 0.0f, 1.0f}} };
-    renderPassInfo.clearValueCount = 1;
-    renderPassInfo.pClearValues = &clearColor;
+
+
+    std::array<VkClearValue, 2> clearValues{};
+    // !! Order of clear values similar to attachment order !! 
+    clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
+    clearValues[1].depthStencil = { 1.0f, 0 };
+    renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+    renderPassInfo.pClearValues = clearValues.data();
 
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 }
-void Imgine_CommandBuffer::Begin() {
+void Imgine_CommandBuffer::begin() {
 
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -54,40 +59,40 @@ void Imgine_CommandBuffer::Begin() {
 
 
 
-void Imgine_CommandBuffer::EndRenderPass()
+void Imgine_CommandBuffer::endRenderPass()
 {
     vkCmdEndRenderPass(commandBuffer);
 }
 
-void Imgine_CommandBuffer::End() {
+void Imgine_CommandBuffer::end() {
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
         throw std::runtime_error("failed to record command buffer!");
     }
 }
 
-void Imgine_CommandBufferPool::Create(VkSurfaceKHR surface) {
+void Imgine_CommandBufferPool::allocateBuffers(VkSurfaceKHR surface) {
 
-    Imgine_QueueFamilyIndices queueFamilyIndices = findQueueFamilies(GetVulkanInstanceBind()->GetPhysicalDevice(), surface);
+    Imgine_QueueFamilyIndices queueFamilyIndices = findQueueFamilies(getVulkanInstanceBind()->GetPhysicalDevice(), surface);
 
     VkCommandPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
 
-    if (vkCreateCommandPool(GetVulkanInstanceBind()->GetDevice(), &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
+    if (vkCreateCommandPool(getVulkanInstanceBind()->GetDevice(), &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
         throw std::runtime_error("failed to create command pool!");
     }
 }
 
 
-void Imgine_CommandBufferPool::Cleanup() {
+void Imgine_CommandBufferPool::cleanup() {
 
     for (auto b : commandBuffers) {
         delete b;
     }
     commandBuffers.clear();
 
-    vkDestroyCommandPool(GetVulkanInstanceBind()->GetDevice(), commandPool, nullptr);
+    vkDestroyCommandPool(getVulkanInstanceBind()->GetDevice(), commandPool, nullptr);
 }
 
 
@@ -101,7 +106,7 @@ VkCommandBuffer Imgine_CommandBufferManager::beginSingleTimeCommand()
     allocInfo.commandBufferCount = 1;
 
     VkCommandBuffer commandBuffer;
-    vkAllocateCommandBuffers(GetVulkanInstanceBind()->GetDevice(), &allocInfo, &commandBuffer);
+    vkAllocateCommandBuffers(getVulkanInstanceBind()->GetDevice(), &allocInfo, &commandBuffer);
 
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -124,13 +129,12 @@ void Imgine_CommandBufferManager::endSingleTimeCommand(VkQueue queue,VkCommandBu
     vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
     vkQueueWaitIdle(queue);
 
-    vkFreeCommandBuffers(GetVulkanInstanceBind()->GetDevice(), pool.commandPool, 1, &commandBuffer);
+    vkFreeCommandBuffers(getVulkanInstanceBind()->GetDevice(), pool.commandPool, 1, &commandBuffer);
 }
 
-void Imgine_CommandBufferManager::Cleanup()
+void Imgine_CommandBufferManager::cleanup()
 {
-    pool.Cleanup();
-    renderFinished.Cleanup();
+    pool.cleanup();
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
         renderFinishedSemaphores[i].Cleanup();
@@ -156,9 +160,11 @@ void createTemporaryBuffer(Imgine_Vulkan* instance, VkDeviceSize size, VkBufferU
     bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
     VmaAllocationCreateInfo allocInfo = {};
-    allocInfo.usage = VMA_MEMORY_USAGE_CPU_ONLY;
+    allocInfo.usage = VMA_MEMORY_USAGE_CPU_ONLY; 
+
 
     vmaCreateBuffer(instance->allocator, &bufferInfo, &allocInfo, &buffer, &allocation, nullptr);
+    DEBUGVMAALLOC(instance->allocator, allocation, "TemporaryBuffer", "VMA_MEMORY_USAGE_CPU_ONLY", "");
 }
 
 /// <summary>
@@ -182,6 +188,7 @@ void createBuffer(Imgine_Vulkan* instance, VkDeviceSize size, VkBufferUsageFlags
 
 
     vmaCreateBuffer(instance->allocator, &bufferInfo, &allocInfo, &buffer, &allocation, nullptr);
+    DEBUGVMAALLOC(instance->allocator, allocation, "Buffer", "VMA_MEMORY_USAGE_GPU_ONLY","");
 }
 
 /// <summary>
@@ -206,11 +213,14 @@ void createUniformBuffer(Imgine_Vulkan* instance, VkDeviceSize size, VkBufferUsa
     allocInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
 
     vmaCreateBuffer(instance->allocator, &bufferInfo, &allocInfo, &buffer, &allocation, nullptr);
+    DEBUGVMAALLOC(instance->allocator, allocation, "UniformBuffer", "VMA_MEMORY_USAGE_AUTO_PREFER_HOST", "VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT");
 }
 
 void destroyBuffer(Imgine_Vulkan* instance, VkBuffer buffer, VmaAllocation allocation) {
+    DEBUGVMADESTROY(instance->allocator, allocation,);
     vmaDestroyBuffer(instance->allocator, buffer, allocation);
 }
+
 
 
 /// <summary>

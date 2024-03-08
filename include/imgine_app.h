@@ -14,10 +14,9 @@ class Imgine_Application
 {
 public:
 
-    Imgine_Vulkan Vulkan;
-    Imgine_GLFWWindow Window;
+    Imgine_Vulkan vulkan;
+    Imgine_GLFWWindow window;
     
-
     void run();
     Imgine_Application() { }
     Imgine_Application(const Imgine_Application&) = delete;

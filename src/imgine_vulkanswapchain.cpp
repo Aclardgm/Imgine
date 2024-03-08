@@ -3,55 +3,11 @@
 #include "imgine_glfw.h"
 #include "imgine_app.h"
 #include "imgine_vulkanhelpers.h"
+#include "imgine_vulkanimage.h"
 #include <algorithm>
 
 
-void Imgine_SwapChain::createImage(uint32_t width, uint32_t height, uint32_t mipLevels,
-    VkSampleCountFlagBits numSamples,
-    VkFormat format,
-    VkImageTiling tiling,
-    VkImageUsageFlags usage,
-    VkMemoryPropertyFlags properties,
-    VkImage& image,
-    VkDeviceMemory& imageMemory) {
 
-
-    VkImageCreateInfo imageInfo{};
-    imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    imageInfo.imageType = VK_IMAGE_TYPE_2D;
-    imageInfo.extent.width = width;
-    imageInfo.extent.height = height;
-    imageInfo.extent.depth = 1;
-    imageInfo.mipLevels = mipLevels;
-    imageInfo.arrayLayers = 1;
-    imageInfo.format = format;
-    imageInfo.tiling = tiling;
-    imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    imageInfo.usage = usage;
-    imageInfo.samples = numSamples;
-    imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-
-    VkDevice device = GetVulkanInstanceBind()->GetDevice();
-    if (vkCreateImage(device, &imageInfo, nullptr, &image) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create image!");
-    }
-
-    VkMemoryRequirements memRequirements;
-    vkGetImageMemoryRequirements(device, image, &memRequirements);
-
-    VkMemoryAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocInfo.allocationSize = memRequirements.size;
-    allocInfo.memoryTypeIndex = findMemoryType(GetVulkanInstanceBind()->GetPhysicalDevice(), memRequirements.memoryTypeBits, properties);
-
-    if (vkAllocateMemory(device, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS) {
-        throw std::runtime_error("failed to allocate image memory!");
-    }
-
-    vkBindImageMemory(device, image, imageMemory, 0);
-
-}
 void Imgine_SwapChain::createFrameBuffers() {
     swapChainFramebuffers.resize(swapChainImageViews.size());
 
@@ -62,14 +18,37 @@ void Imgine_SwapChain::createFrameBuffers() {
 
         VkFramebufferCreateInfo framebufferInfo{};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        framebufferInfo.renderPass = GetVulkanInstanceBind()->renderPass->renderPass;
+        framebufferInfo.renderPass = getVulkanInstanceBind()->renderPass->renderPass;
         framebufferInfo.attachmentCount = 1;
         framebufferInfo.pAttachments = attachments;
         framebufferInfo.width = swapChainExtent.width;
         framebufferInfo.height = swapChainExtent.height;
         framebufferInfo.layers = 1;
 
-        if (vkCreateFramebuffer(GetVulkanInstanceBind()->GetDevice(), &framebufferInfo, nullptr, &swapChainFramebuffers[i]) != VK_SUCCESS) {
+        if (vkCreateFramebuffer(getVulkanInstanceBind()->GetDevice(), &framebufferInfo, nullptr, &swapChainFramebuffers[i]) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create framebuffer!");
+        }
+    }
+}
+void Imgine_SwapChain::createFrameBuffersWithDepth(Imgine_VulkanImageView* depthView) {
+    swapChainFramebuffers.resize(swapChainImageViews.size());
+
+    for (size_t i = 0; i < swapChainImageViews.size(); i++) {
+        std::array<VkImageView, 2> attachments = {
+            swapChainImageViews[i],
+            depthView->view
+        };
+
+        VkFramebufferCreateInfo framebufferInfo{};
+        framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        framebufferInfo.renderPass = getVulkanInstanceBind()->renderPass->renderPass;
+        framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+        framebufferInfo.pAttachments = attachments.data();
+        framebufferInfo.width = swapChainExtent.width;
+        framebufferInfo.height = swapChainExtent.height;
+        framebufferInfo.layers = 1;
+
+        if (vkCreateFramebuffer(getVulkanInstanceBind()->GetDevice(), &framebufferInfo, nullptr, &swapChainFramebuffers[i]) != VK_SUCCESS) {
             throw std::runtime_error("failed to create framebuffer!");
         }
     }
@@ -77,30 +56,15 @@ void Imgine_SwapChain::createFrameBuffers() {
 void Imgine_SwapChain::createImageViews() {
     swapChainImageViews.resize(swapChainImages.size());
 
-    for (size_t i = 0; i < swapChainImages.size(); i++) {
-        VkImageViewCreateInfo createInfo{};
-        createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        createInfo.image = swapChainImages[i];
-        createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        createInfo.format = swapChainImageFormat;
-        createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-        createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-        createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-        createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-        createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        createInfo.subresourceRange.baseMipLevel = 0;
-        createInfo.subresourceRange.levelCount = 1;
-        createInfo.subresourceRange.baseArrayLayer = 0;
-        createInfo.subresourceRange.layerCount = 1;
+    Imgine_Vulkan* instance = getVulkanInstanceBind();
 
-        if (vkCreateImageView(GetVulkanInstanceBind()->GetDevice(), &createInfo, nullptr, &swapChainImageViews[i]) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create image views!");
-        }
+    for (size_t i = 0; i < swapChainImages.size(); i++) {
+        swapChainImageViews[i] = createImageView(instance, swapChainImages[i], swapChainImageFormat,VK_IMAGE_ASPECT_COLOR_BIT);
     }
 }
 void Imgine_SwapChain::createSwapChain(VkSurfaceKHR surface)
 {
-    Imgine_SwapChainSupportDetails swapChainSupport = querySwapChainSupport(GetVulkanInstanceBind()->GetPhysicalDevice(), surface);
+    Imgine_SwapChainSupportDetails swapChainSupport = querySwapChainSupport(getVulkanInstanceBind()->GetPhysicalDevice(), surface);
 
     VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
     VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
@@ -123,7 +87,7 @@ void Imgine_SwapChain::createSwapChain(VkSurfaceKHR surface)
     createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
     
 
-    Imgine_QueueFamilyIndices indices = findQueueFamilies(GetVulkanInstanceBind()->GetPhysicalDevice(), surface);
+    Imgine_QueueFamilyIndices indices = findQueueFamilies(getVulkanInstanceBind()->GetPhysicalDevice(), surface);
     uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
 
     if (indices.graphicsFamily != indices.presentFamily) {
@@ -142,7 +106,7 @@ void Imgine_SwapChain::createSwapChain(VkSurfaceKHR surface)
 
     createInfo.oldSwapchain = VK_NULL_HANDLE;
 
-    VkDevice device = GetVulkanInstanceBind()->GetDevice();
+    VkDevice device = getVulkanInstanceBind()->GetDevice();
 
     if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapChain) != VK_SUCCESS) {
         throw std::runtime_error("failed to create swap chain!");
@@ -158,14 +122,14 @@ void Imgine_SwapChain::createSwapChain(VkSurfaceKHR surface)
 
 void Imgine_SwapChain::CleanupFrameBuffers() {
 
-    VkDevice device = GetVulkanInstanceBind()->GetDevice();
+    VkDevice device = getVulkanInstanceBind()->GetDevice();
     for (auto framebuffer : swapChainFramebuffers) {
         vkDestroyFramebuffer(device, framebuffer, nullptr);
     }
 }
 void Imgine_SwapChain::Cleanup() {
     CleanupFrameBuffers();
-    VkDevice device = GetVulkanInstanceBind()->GetDevice();
+    VkDevice device = getVulkanInstanceBind()->GetDevice();
 
     for (auto imageView : swapChainImageViews) {
         vkDestroyImageView(device, imageView, nullptr);
@@ -181,7 +145,7 @@ void Imgine_SwapChain::Cleanup() {
 
 void Imgine_SwapChain::CleanupSwapChain()
 {
-    VkDevice device = GetVulkanInstanceBind()->GetDevice();
+    VkDevice device = getVulkanInstanceBind()->GetDevice();
     CleanupFrameBuffers();
     for (auto imageView : swapChainImageViews) {
         vkDestroyImageView(device, imageView, nullptr);
@@ -280,7 +244,7 @@ VkExtent2D Imgine_SwapChain::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& ca
     }
     else {
         int width, height;
-        Imgine_Application::getInstance()->Window.GetWindowSize(&width, &height);
+        Imgine_Application::getInstance()->window.GetWindowSize(&width, &height);
 
         VkExtent2D actualExtent = {
             static_cast<uint32_t>(width),

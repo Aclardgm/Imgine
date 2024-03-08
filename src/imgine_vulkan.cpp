@@ -3,9 +3,15 @@
 #include "imgine_window.h"
 #include "imgine_glfw.h"
 #include "imgine_vulkanhelpers.h"
+#include "imgine_types.h"
+#include "imgine_vulkanmemoryallocator.h"
 #include <set>
 #include <string>
 
+
+#include <filesystem>
+#include <iostream>
+namespace fs = std::filesystem;
 
 void Imgine_Vulkan::initVulkan(GLFWwindow* window)
 {
@@ -24,16 +30,19 @@ void Imgine_Vulkan::initVulkan(GLFWwindow* window)
     swapChain.createSwapChain(surface);
     swapChain.createImageViews();
     
+
     renderPass = renderPassManager.CreateRenderPass(&swapChain);
     
 
-    descriptorSetLayout = layout.DescriptorSetLayout.CreateDescriptorSetLayout();
+    descriptorSetLayout = layout.descriptorSetsLayout.createDescriptorTexturedSetLayout();
     
     
     pipeline.createGraphicsPipeline(&layout);
-    swapChain.createFrameBuffers();
-    commandBufferManager.pool.Create(surface);
+    commandBufferManager.getPool().allocateBuffers(surface);
+    createDepthRessources();
+    swapChain.createFrameBuffersWithDepth(&depthView);
 
+    createTextureImage();
     
     //Shader buffer data
     createVertexBuffer();
@@ -41,9 +50,8 @@ void Imgine_Vulkan::initVulkan(GLFWwindow* window)
     
     //Uniform data
     uniformBuffer.Create();
-    descriptorPool.CreateUniformPool();
-    descriptorPool.AllocateUBODescriptorsSets(*descriptorSetLayout, &uniformDescriptorSets, &uniformBuffer);
-
+    descriptorPool.createUniformTexturedPool();
+    descriptorPool.allocateUBOTexturedDescriptorsSets(*descriptorSetLayout, &uniformDescriptorSets, &uniformBuffer, &view, &sampler);
 
 
 
@@ -53,8 +61,8 @@ void Imgine_Vulkan::initVulkan(GLFWwindow* window)
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
-        commandBuffers[i] = commandBufferManager.pool.Create();
-        fences[i] = fenceManager.GetFence();
+        commandBuffers[i] = commandBufferManager.getPool().allocateBuffers();
+        fences[i] = fenceManager.getFence();
     }
     createSyncObjects();
 }
@@ -112,19 +120,22 @@ bool Imgine_Vulkan::isDeviceSuitable(VkPhysicalDevice device)
             swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
         }
 
-        return indices.isComplete() && extensionsSupported && swapChainAdequate;
+        VkPhysicalDeviceFeatures supportedFeatures;
+        vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
+
+        return indices.isComplete() && extensionsSupported && swapChainAdequate && supportedFeatures.samplerAnisotropy;
     }
 
 }
 void Imgine_Vulkan::recreateSwapChain()
 {
-    int width, height;
+    int width = 0, height = 0;
 
     Imgine_Application* app = Imgine_Application::getInstance();
-    app->Window.GetWindowSize(&width, &height);
+    app->window.GetWindowSize(&width, &height);
 
     while (width == 0 || height == 0) {
-        app->Window.GetWindowSize(&width, &height);
+        app->window.GetWindowSize(&width, &height);
         glfwWaitEvents();
     }
 
@@ -134,10 +145,13 @@ void Imgine_Vulkan::recreateSwapChain()
 
     swapChain.createSwapChain(surface);
     swapChain.createImageViews();
+    createDepthRessources();
     swapChain.createFrameBuffers();
 }
 void Imgine_Vulkan::cleanupSwapChain()
 {
+    vkDestroyImageView(device, depthView.view, nullptr);
+    destroyImage(this, depthImage.image, depthImage.allocation);
     swapChain.CleanupSwapChain();
 }
 
@@ -146,7 +160,7 @@ void Imgine_Vulkan::cleanupSwapChain()
 /// </summary>
 void Imgine_Vulkan::createVertexBuffer()
 {
-    VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+    VkDeviceSize bufferSize = sizeof(mesh.vertices[0]) * mesh.vertices.size();
     
     VkBuffer stagingBuffer;
     VmaAllocation  stagingAllocation;
@@ -154,17 +168,20 @@ void Imgine_Vulkan::createVertexBuffer()
     createTemporaryBuffer(this, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, stagingBuffer, stagingAllocation);
 
     void* mappedData;
-    copyMappedMemorytoAllocation(this, vertices.data(), stagingAllocation, vertices.size(), &mappedData);
+    copyMappedMemorytoAllocation(this, mesh.vertices.data(), stagingAllocation, static_cast<uint32_t>(mesh.vertices.size()), &mappedData);
 
-    createBuffer(this, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, vertexBuffer, vertexBufferAllocation);
+    createBuffer(this, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, model.vertexBuffer, model.vertexBufferAllocation);
 
-    copyBuffer(this, stagingBuffer, vertexBuffer, bufferSize);
+    copyBuffer(this, stagingBuffer, model.vertexBuffer, bufferSize);
 
     destroyBuffer(this, stagingBuffer, stagingAllocation);
 }
 
 void Imgine_Vulkan::createIndexBuffer() {
-
+    const std::vector<uint16_t> indices = {
+        0, 1, 2, 2, 3, 0,
+        4, 5, 6, 6, 7, 4
+    };
     VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
 
     VkBuffer stagingBuffer;
@@ -172,19 +189,30 @@ void Imgine_Vulkan::createIndexBuffer() {
     createTemporaryBuffer(this,bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, stagingBuffer, stagingAllocation);
 
     void* mappedData;
-    copyMappedMemorytoAllocation(this, indices.data(), stagingAllocation, indices.size(), &mappedData);
+    copyMappedMemorytoAllocation(this, indices.data(), stagingAllocation, static_cast<uint32_t>(indices.size()), &mappedData);
 
-    createBuffer(this, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, indexBuffer, indexBufferAllocation);
+    createBuffer(this, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, model.indexBuffer, model.indexBufferAllocation);
 
-    copyBuffer(this, stagingBuffer, indexBuffer, bufferSize);
+    copyBuffer(this, stagingBuffer, model.indexBuffer, bufferSize);
     destroyBuffer(this, stagingBuffer, stagingAllocation);
 }
 
 void Imgine_Vulkan::createTextureImage()
 {
-    
+    Imgine_AssetLoader* assetLoader = Imgine_AssetLoader::GetInstance();
+    imageRef = assetLoader->loadTexture(this, "textures/texture.jpg", Imgine_AssetLoader::TextureTypes::DIFFUSE);
+    view.view = createImageView(this, imageRef.GetTexture().GetImage(), VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
+    view.imageRef = imageRef;
+    createSampler(this, &sampler.sampler);
+}
 
+void Imgine_Vulkan::createDepthRessources()
+{
+    VkFormat depthFormat = findDepthFormat(physicalDevice);
 
+    createImage(this,swapChain.swapChainExtent.width, swapChain.swapChainExtent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,  &depthImage.image, &depthImage.allocation);
+    depthView.view = createImageView(this,depthImage.image, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+    transitionImageLayout(this,depthImage.image, depthFormat,VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 }
 
 void Imgine_Vulkan::createGLFWSurface(GLFWwindow* window)
@@ -265,6 +293,7 @@ void Imgine_Vulkan::createLogicalDevice()
     }
 
     VkPhysicalDeviceFeatures deviceFeatures{};
+    deviceFeatures.samplerAnisotropy = VK_TRUE;
 
     VkDeviceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -301,20 +330,20 @@ void Imgine_Vulkan::createSyncObjects() {
 
 
     swapChain.imageAquiredSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-    commandBufferManager.renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+    commandBufferManager.getSemaphores().resize(MAX_FRAMES_IN_FLIGHT);
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
-        swapChain.imageAquiredSemaphores[i].SetVulkanInstanceBind(this);
-        commandBufferManager.renderFinishedSemaphores[i].SetVulkanInstanceBind(this);
+        swapChain.imageAquiredSemaphores[i].setVulkanInstanceBind(this);
+        commandBufferManager.getSemaphores()[i].setVulkanInstanceBind(this);
         if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &swapChain.imageAquiredSemaphores[i].semaphore) != VK_SUCCESS ||
-            vkCreateSemaphore(device, &semaphoreInfo, nullptr, &commandBufferManager.renderFinishedSemaphores[i].semaphore) != VK_SUCCESS ||
+            vkCreateSemaphore(device, &semaphoreInfo, nullptr, &commandBufferManager.getSemaphores()[i].semaphore) != VK_SUCCESS ||
             vkCreateFence(device, &fenceInfo, nullptr, &fences[i]->fence) != VK_SUCCESS) {
             throw std::runtime_error("failed to create semaphores!");
         }
     }
 }
 
-void Imgine_Vulkan::Draw()
+void Imgine_Vulkan::draw()
 {
     vkWaitForFences(device, 1, &fences[currentFrame]->fence, VK_TRUE, UINT64_MAX);
 
@@ -335,15 +364,15 @@ void Imgine_Vulkan::Draw()
 
     vkResetCommandBuffer(commandBuffers[currentFrame]->commandBuffer, /*VkCommandBufferResetFlagBits*/ 0);
 
-    renderPassManager.BeginRenderPass(renderPass, 
+    renderPassManager.beginRenderPass(renderPass, 
         commandBuffers[currentFrame], 
         &swapChain,
         &layout,
         &uniformDescriptorSets,
-        vertexBuffer,
-        static_cast<uint32_t>(vertices.size()), 
-        indexBuffer, 
-        static_cast<uint32_t>(indices.size()), 
+        model.vertexBuffer,
+        static_cast<uint32_t>(mesh.vertices.size()), 
+        model.indexBuffer,
+        static_cast<uint32_t>(mesh.indices.size()), 
         imageIndex,
         currentFrame);
 
@@ -359,7 +388,7 @@ void Imgine_Vulkan::Draw()
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &commandBuffers[currentFrame]->commandBuffer;
 
-    VkSemaphore signalSemaphores[] = { commandBufferManager.renderFinishedSemaphores[currentFrame].semaphore};
+    VkSemaphore signalSemaphores[] = { commandBufferManager.getSemaphores()[currentFrame].semaphore};
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
@@ -382,8 +411,8 @@ void Imgine_Vulkan::Draw()
     res = vkQueuePresentKHR(presentQueue, &presentInfo);
 
 
-    if (res == VK_ERROR_OUT_OF_DATE_KHR || res == VK_SUBOPTIMAL_KHR || Imgine_Application::getInstance()->Window.framebufferResized) {
-        Imgine_Application::getInstance()->Window.framebufferResized = false;
+    if (res == VK_ERROR_OUT_OF_DATE_KHR || res == VK_SUBOPTIMAL_KHR || Imgine_Application::getInstance()->window.framebufferResized) {
+        Imgine_Application::getInstance()->window.framebufferResized = false;
         recreateSwapChain();
     }
     else if (res != VK_SUCCESS) {
@@ -394,23 +423,30 @@ void Imgine_Vulkan::Draw()
 }
 
 
-void Imgine_Vulkan::Cleanup()
+void Imgine_Vulkan::cleanup()
 {
     swapChain.Cleanup();
 
+    sampler.Cleanup(this);
+    view.Cleanup(this);
 
-    pipeline.Cleanup(layout.PipelineLayout);
-    renderPass->Cleanup();
+    depthView.Cleanup(this);
+    depthImage.Cleanup(this);
+
+    pipeline.cleanup(layout.pipelineLayout);
+    renderPass->cleanup();
     renderPassManager.Cleanup();
 
 
     uniformBuffer.Cleanup();
-    descriptorPool.Cleanup(&uniformDescriptorSets);
-    layout.Cleanup();
+    descriptorPool.cleanup(&uniformDescriptorSets);
+    layout.cleanup();
+
+    mesh.Cleanup();
+    model.Cleanup(this);
 
 
-    destroyBuffer(this, vertexBuffer, vertexBufferAllocation);
-    destroyBuffer(this, indexBuffer, indexBufferAllocation);
+    Imgine_AssetLoader::GetInstance()->Cleanup(this);
 
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
@@ -418,7 +454,7 @@ void Imgine_Vulkan::Cleanup()
         vkDestroyFence(device, fences[i]->fence, nullptr);
     }
 
-    commandBufferManager.Cleanup();
+    commandBufferManager.cleanup();
 
 
     destroyVMAllocator(allocator);

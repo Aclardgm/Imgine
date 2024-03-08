@@ -3,5 +3,5 @@
 
 void Imgine_VulkanSemaphore::Cleanup()
 {
-    vkDestroySemaphore(GetVulkanInstanceBind()->GetDevice(), semaphore, nullptr);
+    vkDestroySemaphore(getVulkanInstanceBind()->GetDevice(), semaphore, nullptr);
 }

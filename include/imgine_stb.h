@@ -1,11 +1,10 @@
 #pragma once
-
-
 #ifndef ImGINE_STB
 #define ImGINE_STB
 
-#define STB_IMAGE_IMPLEMENTATION
+#include <vulkan/vulkan.h>
 #include <stb_image.h>
+#include <stdexcept>
 
 
 
@@ -46,22 +45,9 @@
 // more user-friendly ones.
 //
 // Paletted PNG, BMP, GIF, and PIC images are automatically depalettized.
-stbi_uc* stb_Import(std::string str,int& width,int& height, int& colorDefinition)
-{
-    stbi_uc* pixels = stbi_load(str.c_str(), &width, &height, &colorDefinition, STBI_rgb_alpha);
-    VkDeviceSize imageSize = width * height * 4;
+stbi_uc* stb_Import(std::string str, int& width, int& height, int& colorDefinition);
 
-    if (!pixels) {
-        throw std::runtime_error("failed to load texture image!");
-    }
-    return pixels;
-}
-
-void stb_Free(stbi_uc* target)
-{
-    stbi_image_free(target);
-}
-
+void stb_Free(stbi_uc* target);
 
 
 #endif

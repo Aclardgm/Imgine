@@ -8,6 +8,9 @@
 #include "imgine_vulkaninstancebind.h"
 #include "imgine_vulkansemaphore.h"
 
+
+struct Imgine_VulkanImageView;
+
 /// <summary>
 /// Describe swapChain Capabilities, Format and Present mode
 /// </summary>
@@ -30,16 +33,15 @@ Imgine_QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKH
 
 
 struct Imgine_SwapChain : public Imgine_VulkanInstanceBind {
+
     //SwapChain
     VkSwapchainKHR swapChain;
-    std::vector<VkImage> swapChainImages;
     VkFormat swapChainImageFormat;
     VkExtent2D swapChainExtent;
+    std::vector<VkImage> swapChainImages;
     std::vector<VkImageView> swapChainImageViews;
     std::vector<VkFramebuffer> swapChainFramebuffers;
     std::vector<Imgine_VulkanSemaphore> imageAquiredSemaphores;
-
-
 
 public:
     Imgine_SwapChain() = delete;
@@ -51,14 +53,7 @@ public:
     void createSwapChain(VkSurfaceKHR surface);
 
     void createFrameBuffers();
-    void createImage(uint32_t width, uint32_t height, uint32_t mipLevels,
-        VkSampleCountFlagBits numSamples,
-        VkFormat format,
-        VkImageTiling tiling,
-        VkImageUsageFlags usage,
-        VkMemoryPropertyFlags properties,
-        VkImage& image,
-        VkDeviceMemory& imageMemory);
+    void createFrameBuffersWithDepth(Imgine_VulkanImageView* depthView);
     void createImageViews();
 
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
