@@ -3,19 +3,10 @@
 #define ImGINE_VULKANRESSOURCES
 
 
-#include "imgine_vulkaninstancebind.h"
 #include <vector>
 #include <vulkan/vulkan.h>
+#include "imgine_vulkaninstancebind.h"
 #include "imgine_vulkanmemoryallocator.h"
-
-
-struct Imgine_VulkanTexture {
-	VkExtent2D extent = { 0, 0 }; 
-	VkFormat format; 
-	VkImage image = VK_NULL_HANDLE;
-};
-
-
 
 
 struct Imgine_VulkanUniformBuffer : public Imgine_VulkanInstanceBind
@@ -29,7 +20,6 @@ public:
 	void Update(VkExtent2D extent, uint32_t imageIndex);
 
 	std::vector<VkBuffer> uniformBuffers;
-	//std::vector<VkDeviceMemory> uniformBuffersMemory;
 	std::vector<VmaAllocation> uniformBuffersAllocation;
 	std::vector<void*> uniformBuffersMapped;
 };

@@ -5,7 +5,6 @@
 
 #include <vulkan/vulkan.h>
 
-#include "imgine_vulkaninstancebind.h"
 #include "imgine_vulkanswapchain.h"
 #include "imgine_vulkanrenderpass.h"
 #include "imgine_vulkancommandbuffer.h"
@@ -13,9 +12,7 @@
 #include "imgine_vulkanimage.h"
 #include "imgine_vulkanpipeline.h"
 #include "imgine_vulkandescriptorsets.h"
-#include "imgine_vulkanressources.h"
 #include "imgine_assetloader.h"
-#include "imgine_vulkanmemoryallocator.h"
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 struct GLFWwindow;
@@ -50,7 +47,7 @@ public:
     //Devices
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     VkDevice device;
-    
+
     //Queues
     VkQueue graphicsQueue;
     VkQueue presentQueue;
@@ -85,17 +82,17 @@ public:
 
 
     Imgine_Mesh mesh = Imgine_Mesh({
-            {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-            {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-            {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-            {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
+            {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+            {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+            {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+            {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
 
-            {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-            {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-            {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-            {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
+            {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+            {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+            {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+            {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
         }, 
-        {
+        { 
             0, 1, 2, 2, 3, 0,
             4, 5, 6, 6, 7, 4
         }

@@ -5,12 +5,10 @@
 #include <string>
 #include <array>
 #include <optional>
-#include "imgine_vulkanmemoryallocator.h"
 #include "imgine_mesh.h"
 
 
 struct Imgine_Vulkan;
-enum Imgine_TextureTypes;
 
 
 void loadImage(Imgine_Vulkan* instance, std::string path, VkImage* image, VmaAllocation* allocation);

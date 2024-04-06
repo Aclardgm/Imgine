@@ -193,6 +193,55 @@ target_link_libraries(${PROJECT_NAME} glfw ${GLFW_LIBRARIES})
 target_link_libraries(${PROJECT_NAME} glm assimp flecs::flecs_static Vulkan::Vulkan Catch2::Catch2WithMain)
 
 
+### Copy /textures/ directory to target ##########################################################
+
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/textures/"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_CURRENT_SOURCE_DIR}/textures"
+        "${CMAKE_BINARY_DIR}/Debug/textures"
+)
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/textures/"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_CURRENT_SOURCE_DIR}/textures"
+        "${CMAKE_BINARY_DIR}/Release/textures"
+)
+
+
+
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/textures/"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_CURRENT_SOURCE_DIR}/textures"
+        "${CMAKE_BINARY_DIR}/textures"
+)
+
+
+### Copy /models/ directory to target ##########################################################
+
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/textures/"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_CURRENT_SOURCE_DIR}/models"
+        "${CMAKE_BINARY_DIR}/Debug/models"
+)
+
+
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/textures/"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_CURRENT_SOURCE_DIR}/models"
+        "${CMAKE_BINARY_DIR}/Release/models"
+)
+
+
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/textures/"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_CURRENT_SOURCE_DIR}/models"
+        "${CMAKE_BINARY_DIR}/models"
+)
 
 
 ### Tests  ########################################################################################
@@ -218,8 +267,6 @@ target_include_directories(
 
 target_link_libraries(${TEST_PROJECT_NAME} glfw ${GLFW_LIBRARIES})
 target_link_libraries(${TEST_PROJECT_NAME} glm assimp flecs::flecs_static Vulkan::Vulkan Catch2::Catch2WithMain)
-
-
 
 
 ## Compile shaders #######################################################################

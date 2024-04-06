@@ -48,20 +48,22 @@ void processNode(Imgine_Vulkan* instance, aiNode* node, const aiScene* scene, st
 Imgine_Mesh&& processMesh(Imgine_Vulkan* instance, aiMesh* mesh, const aiScene* scene)
 {
     // data to fill
-    std::vector<Vertex> vertices;
+    std::vector<Imgine_Vertex> vertices;
     std::vector<unsigned int> indices;
     std::vector<Imgine_TextureRef> textures;
 
     // walk through each of the mesh's vertices
     for (unsigned int i = 0; i < mesh->mNumVertices; i++)
     {
-        Vertex vertex;
+        Imgine_Vertex vertex;
         glm::vec3 vector; // we declare a placeholder vector since assimp uses its own vector class that doesn't directly convert to glm's vec3 class so we transfer the data to this placeholder glm::vec3 first.
         // positions
         vector.x = mesh->mVertices[i].x;
         vector.y = mesh->mVertices[i].y;
         vector.z = mesh->mVertices[i].z;
         vertex.pos = vector;
+
+        /*
         // normals
         if (mesh->HasNormals())
         {
@@ -93,6 +95,8 @@ Imgine_Mesh&& processMesh(Imgine_Vulkan* instance, aiMesh* mesh, const aiScene* 
         else
             vertex.texCoord = glm::vec2(0.0f, 0.0f);
 
+        
+        */
         vertices.push_back(vertex);
     }
     // now wak through each of the mesh's faces (a face is a mesh its triangle) and retrieve the corresponding vertex indices.

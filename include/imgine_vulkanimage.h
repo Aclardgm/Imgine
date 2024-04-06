@@ -4,9 +4,9 @@
 #include <vulkan/vulkan.h>
 #include <string>
 
+#include "imgine_define.h"
 #include "imgine_vulkanmemoryallocator.h"
 #include "imgine_stb.h"
-#include "imgine_define.h"
 
 
 struct Imgine_Texture;
@@ -98,8 +98,9 @@ void createImage(
 	VkFormat format,
 	VkImageTiling tiling,
 	VkImageUsageFlags usage,
-	VkImage* image,
-	VmaAllocation* allocation);
+	VkMemoryPropertyFlags properties,
+	VkImage* outImage,
+	VmaAllocation* outAllocation);
 
 void createTextureImage(
 	Imgine_Vulkan* instance,

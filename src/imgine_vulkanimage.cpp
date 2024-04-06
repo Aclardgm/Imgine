@@ -125,7 +125,6 @@ void transitionImageLayout(
 
     VkPipelineStageFlags sourceStage;
     VkPipelineStageFlags destinationStage;
-
     if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
         barrier.srcAccessMask = 0;
         barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
@@ -171,6 +170,7 @@ void createImage(
     VkFormat format,
     VkImageTiling tiling,
     VkImageUsageFlags usage,
+    VkMemoryPropertyFlags properties,
     VkImage* outImage,
     VmaAllocation* outAllocation) {
 
@@ -191,6 +191,9 @@ void createImage(
 
     VmaAllocationCreateInfo allocCreateInfo{};
     allocCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
+    allocCreateInfo.requiredFlags = properties;
+    allocCreateInfo.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
+    allocCreateInfo.priority = 1.0f;
 
     vmaCreateImage(instance->allocator, &imageInfo, &allocCreateInfo, outImage, outAllocation, nullptr);
     DEBUGVMAALLOC(instance->allocator, *outAllocation, "Image", "VK_SHARING_MODE_EXCLUSIVE", "VMA_MEMORY_USAGE_AUTO");
@@ -222,6 +225,7 @@ void createTextureImage(
         VK_FORMAT_R8G8B8A8_SRGB,
         VK_IMAGE_TILING_OPTIMAL,
         VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
         textureImage,
         allocation);
 

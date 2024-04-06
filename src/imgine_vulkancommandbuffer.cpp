@@ -217,7 +217,7 @@ void createUniformBuffer(Imgine_Vulkan* instance, VkDeviceSize size, VkBufferUsa
 }
 
 void destroyBuffer(Imgine_Vulkan* instance, VkBuffer buffer, VmaAllocation allocation) {
-    DEBUGVMADESTROY(instance->allocator, allocation,);
+    DEBUGVMADESTROY(instance->allocator, allocation);
     vmaDestroyBuffer(instance->allocator, buffer, allocation);
 }
 

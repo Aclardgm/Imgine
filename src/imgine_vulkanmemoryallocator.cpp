@@ -18,11 +18,11 @@ VmaAllocator createVMAllocator(
 
 	VmaAllocatorCreateInfo allocatorCreateInfo = {};
 	allocatorCreateInfo.flags = VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT;
-	allocatorCreateInfo.vulkanApiVersion = VK_API_VERSION_1_2;
+	allocatorCreateInfo.vulkanApiVersion = VK_MAKE_VERSION(1,3,231);
 	allocatorCreateInfo.physicalDevice = physicalDevice;
 	allocatorCreateInfo.device = device;
 	allocatorCreateInfo.instance = instance;
-	allocatorCreateInfo.pVulkanFunctions = &vulkanFunctions;
+	allocatorCreateInfo.pVulkanFunctions = NULL;// &vulkanFunctions;
 
 	VmaAllocator allocator;
 	vmaCreateAllocator(&allocatorCreateInfo, &allocator);
@@ -43,13 +43,16 @@ void destroyVMAllocator(VmaAllocator allocator) {
 void TemporaryFunction()
 {
 	copyMappedMemorytoAllocation<stbi_uc>(nullptr, nullptr, VK_NULL_HANDLE, 0, nullptr);
-	copyMappedMemorytoAllocation<const Vertex>(nullptr, nullptr, VK_NULL_HANDLE, 0,nullptr);
-	copyMappedMemorytoAllocation<Vertex>(nullptr, nullptr, VK_NULL_HANDLE, 0, nullptr);
-	copyMappedMemorytoAllocation<const uint16_t>(nullptr, nullptr, VK_NULL_HANDLE, 0, nullptr);
+	copyMappedMemorytoAllocation<const Imgine_Vertex>(nullptr, nullptr, VK_NULL_HANDLE, 0,nullptr);
+	copyMappedMemorytoAllocation<Imgine_Vertex>(nullptr, nullptr, VK_NULL_HANDLE, 0, nullptr);
+	copyMappedMemorytoAllocation<const uint32_t>(nullptr, nullptr, VK_NULL_HANDLE, 0, nullptr);
+	copyMappedMemorytoAllocation<uint32_t>(nullptr, nullptr, VK_NULL_HANDLE, 0, nullptr);
+
 	copyMappedMemorytoAllocation<stbi_uc>(nullptr, nullptr, VK_NULL_HANDLE,  nullptr,0);
-	copyMappedMemorytoAllocation<const Vertex>(nullptr, nullptr, VK_NULL_HANDLE,  nullptr,0);
-	copyMappedMemorytoAllocation<Vertex>(nullptr, nullptr, VK_NULL_HANDLE, nullptr, 0);
-	copyMappedMemorytoAllocation<const uint16_t>(nullptr, nullptr, VK_NULL_HANDLE,  nullptr,0);
+	copyMappedMemorytoAllocation<const Imgine_Vertex>(nullptr, nullptr, VK_NULL_HANDLE,  nullptr,0);
+	copyMappedMemorytoAllocation<Imgine_Vertex>(nullptr, nullptr, VK_NULL_HANDLE, nullptr, 0);
+	copyMappedMemorytoAllocation<const uint32_t>(nullptr, nullptr, VK_NULL_HANDLE, nullptr, 0);
+	copyMappedMemorytoAllocation<uint32_t>(nullptr, nullptr, VK_NULL_HANDLE,  nullptr,0);
 }
 
 template<typename T>

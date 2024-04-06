@@ -25,8 +25,6 @@ void Imgine_Vulkan::initVulkan(GLFWwindow* window)
 
     allocator = createVMAllocator(instance, device, physicalDevice);
 
-
-
     swapChain.createSwapChain(surface);
     swapChain.createImageViews();
     
@@ -45,15 +43,13 @@ void Imgine_Vulkan::initVulkan(GLFWwindow* window)
     createTextureImage();
     
     //Shader buffer data
-    createVertexBuffer();
-    createIndexBuffer();
-    
+    model.Allocate(this,mesh);
+
+
     //Uniform data
     uniformBuffer.Create();
     descriptorPool.createUniformTexturedPool();
     descriptorPool.allocateUBOTexturedDescriptorsSets(*descriptorSetLayout, &uniformDescriptorSets, &uniformBuffer, &view, &sampler);
-
-
 
 
     commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
@@ -79,7 +75,7 @@ void Imgine_Vulkan::createInstance()
     appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
     appInfo.pEngineName = "No Engine";
     appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-    appInfo.apiVersion = VK_API_VERSION_1_0;
+    appInfo.apiVersion = VK_MAKE_VERSION(1, 3, 231);
 
     VkInstanceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -178,18 +174,14 @@ void Imgine_Vulkan::createVertexBuffer()
 }
 
 void Imgine_Vulkan::createIndexBuffer() {
-    const std::vector<uint16_t> indices = {
-        0, 1, 2, 2, 3, 0,
-        4, 5, 6, 6, 7, 4
-    };
-    VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+    VkDeviceSize bufferSize = sizeof(mesh.indices[0]) * mesh.indices.size();
 
     VkBuffer stagingBuffer;
     VmaAllocation  stagingAllocation;
     createTemporaryBuffer(this,bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, stagingBuffer, stagingAllocation);
 
     void* mappedData;
-    copyMappedMemorytoAllocation(this, indices.data(), stagingAllocation, static_cast<uint32_t>(indices.size()), &mappedData);
+    copyMappedMemorytoAllocation(this, mesh.indices.data(), stagingAllocation, static_cast<uint32_t>(mesh.indices.size()), &mappedData);
 
     createBuffer(this, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, model.indexBuffer, model.indexBufferAllocation);
 
@@ -210,9 +202,10 @@ void Imgine_Vulkan::createDepthRessources()
 {
     VkFormat depthFormat = findDepthFormat(physicalDevice);
 
-    createImage(this,swapChain.swapChainExtent.width, swapChain.swapChainExtent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,  &depthImage.image, &depthImage.allocation);
+    createImage(this,swapChain.swapChainExtent.width, swapChain.swapChainExtent.height, depthFormat, 
+        VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
+        &depthImage.image, &depthImage.allocation);
     depthView.view = createImageView(this,depthImage.image, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
-    transitionImageLayout(this,depthImage.image, depthFormat,VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 }
 
 void Imgine_Vulkan::createGLFWSurface(GLFWwindow* window)

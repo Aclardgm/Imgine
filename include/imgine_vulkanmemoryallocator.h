@@ -3,6 +3,11 @@
 #define ImGINE_VULKANMEMORYALLOCATOR
 
 #include <vulkan/vulkan.h>
+#ifdef _DEBUG
+#define VMA_DEBUG_INITIALIZE_ALLOCATIONS (1)
+#define VMA_DEBUG_ALWAYS_DEDICATED_MEMORY (1)
+//#define VMA_DEDICATED_ALLOCATION (1)
+#endif
 #include "vma/vk_mem_alloc.h"
 
 struct Imgine_Vulkan;
