@@ -79,9 +79,9 @@ struct Imgine_Vertex {
 struct Imgine_Mesh {
 
     Imgine_Mesh() {}
-    Imgine_Mesh(std::vector<Imgine_Vertex> vert = std::vector<Imgine_Vertex>(),
-        std::vector<uint32_t> inds = std::vector<uint32_t>(),
-        std::vector<Imgine_TextureRef> texts = std::vector<Imgine_TextureRef>()) : vertices(vert), indices(inds), textures(texts) {}
+    Imgine_Mesh(std::vector<Imgine_Vertex> vert ,
+        std::vector<uint32_t> inds ,
+        std::vector<Imgine_TextureRef> texts) : vertices(vert), indices(inds), textures(texts) {}
 
 	std::vector<Imgine_Vertex> vertices;
 	std::vector<uint32_t> indices;
@@ -99,6 +99,8 @@ struct Imgine_Mesh {
 
 //Id to specific loaded asset in AssetLoader
 struct Imgine_MeshRef {
+    Imgine_MeshRef(unsigned int id = FALSE_ID) : ID(id) {}
+    Imgine_MeshRef(Imgine_MeshRef& ref) : ID(ref.ID) {}
     unsigned int ID = FALSE_ID;
     Imgine_Mesh& GetMesh();
 };
@@ -107,13 +109,53 @@ struct Imgine_MeshRef {
 /// Contain vertex and indices allocation for specific asset
 /// </summary>
 struct Imgine_VulkanModel {
+
+    Imgine_VulkanModel(const Imgine_VulkanModel& other)
+        :vertexBuffer(other.vertexBuffer), 
+        vertexBufferAllocation(other.vertexBufferAllocation), 
+        indexBuffer(other.indexBuffer), 
+        indexBufferAllocation(other.indexBufferAllocation ), 
+        vertexBufferSize(other.indexBufferSize),
+        indexBufferSize(other.vertexBufferSize)
+    {
+
+    }
+    Imgine_VulkanModel(Imgine_VulkanModel&& other)
+        :vertexBuffer(std::move(other.vertexBuffer)),
+        vertexBufferAllocation(std::move(other.vertexBufferAllocation)),
+        indexBuffer(std::move(other.indexBuffer)),
+        indexBufferAllocation(std::move(other.indexBufferAllocation)),
+        vertexBufferSize(std::move(other.indexBufferSize)),
+        indexBufferSize(std::move(other.vertexBufferSize))
+    {
+
+    }
+    Imgine_VulkanModel(Imgine_Vulkan* instance, Imgine_Mesh& mesh)
+        :vertexBuffer(), vertexBufferAllocation(), indexBuffer(), indexBufferAllocation(), vertexBufferSize(0), indexBufferSize(0)
+    {
+        Allocate(instance, mesh);
+    }
+
     VkBuffer vertexBuffer;
     VmaAllocation vertexBufferAllocation;
     VkBuffer indexBuffer;
     VmaAllocation indexBufferAllocation;
-
+    uint32_t vertexBufferSize;
+    uint32_t indexBufferSize;
     void Allocate(Imgine_Vulkan* instance, Imgine_Mesh& mesh);
     void Cleanup(Imgine_Vulkan* instance);
+
+
+
+
+    Imgine_VulkanModel& operator=(Imgine_VulkanModel&& rhs) { 
+        vertexBuffer = std::move(rhs.vertexBuffer);
+        vertexBufferAllocation = std::move(rhs.vertexBufferAllocation);
+        indexBuffer = std::move(rhs.indexBuffer);
+        indexBufferAllocation = std::move(rhs.indexBufferAllocation);
+        vertexBufferSize = std::move(rhs.vertexBufferSize);
+        indexBufferSize = std::move(rhs.indexBufferSize);
+    }
 };
 
 

@@ -4,18 +4,32 @@
 #include "imgine_vulkan.h"
 #include "imgine_types.h"
 
+#include <filesystem>
+
 bool AssimpImportScene(Imgine_Vulkan* instance, const std::string& pFile, std::vector<Imgine_Mesh>& meshes) {
     // Create an instance of the Importer class
     Assimp::Importer importer;
 
+    std::filesystem::path path = pFile;
+    
+    unsigned int flags = aiProcess_CalcTangentSpace |
+        aiProcess_Triangulate |
+        aiProcess_JoinIdenticalVertices |
+        aiProcess_SortByPType;
+
+
+    //Obj files require flipping UVs
+    if (path.extension() == ".obj")
+    {
+        flags = flags | aiProcess_FlipUVs;
+    }
+
     // And have it read the given file with some example postprocessing
     // Usually - if speed is not the most important aspect for you - you'll
     // probably to request more postprocessing than we do in this example.
-    const aiScene* scene = importer.ReadFile(pFile,
-        aiProcess_CalcTangentSpace |
-        aiProcess_Triangulate |
-        aiProcess_JoinIdenticalVertices |
-        aiProcess_SortByPType);
+    const aiScene* scene = importer.ReadFile(pFile, flags);
+
+    
 
     // If the import failed, report it
     if (nullptr == scene) {
@@ -27,6 +41,7 @@ bool AssimpImportScene(Imgine_Vulkan* instance, const std::string& pFile, std::v
     processNode(instance,scene->mRootNode, scene, meshes);
 
 
+
     // We're done. Everything will be cleaned up by the importer destructor
     return true;
 }
@@ -36,7 +51,7 @@ void processNode(Imgine_Vulkan* instance, aiNode* node, const aiScene* scene, st
     for (unsigned int i = 0; i < node->mNumMeshes; i++)
     {
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-        meshes.push_back(processMesh(instance,mesh, scene));
+        meshes.push_back(std::move(processMesh(instance, mesh, scene)));
     }
     // then do the same for each of its children
     for (unsigned int i = 0; i < node->mNumChildren; i++)
@@ -45,7 +60,7 @@ void processNode(Imgine_Vulkan* instance, aiNode* node, const aiScene* scene, st
     }
 }
 
-Imgine_Mesh&& processMesh(Imgine_Vulkan* instance, aiMesh* mesh, const aiScene* scene)
+Imgine_Mesh processMesh(Imgine_Vulkan* instance, aiMesh* mesh, const aiScene* scene)
 {
     // data to fill
     std::vector<Imgine_Vertex> vertices;
@@ -72,6 +87,10 @@ Imgine_Mesh&& processMesh(Imgine_Vulkan* instance, aiMesh* mesh, const aiScene* 
             vector.z = mesh->mNormals[i].z;
             vertex.normal = vector;
         }
+        
+        
+        */
+
         // texture coordinates
         if (mesh->mTextureCoords[0]) // does the mesh contain texture coordinates?
         {
@@ -81,22 +100,22 @@ Imgine_Mesh&& processMesh(Imgine_Vulkan* instance, aiMesh* mesh, const aiScene* 
             vec.x = mesh->mTextureCoords[0][i].x;
             vec.y = mesh->mTextureCoords[0][i].y;
             vertex.texCoord = vec;
+            vertex.color = glm::vec3(1.0f, 1.0f, 1.0f);
             // tangent
-            vector.x = mesh->mTangents[i].x;
-            vector.y = mesh->mTangents[i].y;
-            vector.z = mesh->mTangents[i].z;
-            vertex.tangent = vector;
-            // bitangent
-            vector.x = mesh->mBitangents[i].x;
-            vector.y = mesh->mBitangents[i].y;
-            vector.z = mesh->mBitangents[i].z;
-            vertex.bitangent = vector;
+            //vector.x = mesh->mTangents[i].x;
+            //vector.y = mesh->mTangents[i].y;
+            //vector.z = mesh->mTangents[i].z;
+            //vertex.tangent = vector;
+            //// bitangent
+            //vector.x = mesh->mBitangents[i].x;
+            //vector.y = mesh->mBitangents[i].y;
+            //vector.z = mesh->mBitangents[i].z;
+            //vertex.bitangent = vector;
         }
         else
             vertex.texCoord = glm::vec2(0.0f, 0.0f);
 
-        
-        */
+
         vertices.push_back(vertex);
     }
     // now wak through each of the mesh's faces (a face is a mesh its triangle) and retrieve the corresponding vertex indices.

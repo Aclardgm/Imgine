@@ -7,6 +7,7 @@
 #include "imgine_vulkanressources.h"
 #include "imgine_vulkanpipeline.h"
 #include "imgine_vulkanhelpers.h"
+#include "imgine_vulkanmemoryallocator.h"
 
 Imgine_VulkanRenderPass* Imgine_VulkanRenderPassManager::CreateRenderPass(Imgine_SwapChain* swapChain) {
 
@@ -142,6 +143,52 @@ void Imgine_VulkanRenderPassManager::beginRenderPass(
     vkCmdDrawIndexed(cmdBuffer, indexBufferSize, 1, 0, 0, 0);
     endRenderPass(commandBuffer);
 }
+
+
+
+void Imgine_VulkanRenderPassManager::beginRenderPass(
+    Imgine_VulkanRenderPass* renderPass,
+    Imgine_CommandBuffer* commandBuffer,
+    Imgine_SwapChain* swapChain,
+    Imgine_VulkanLayout* layout,
+    Imgine_VulkanDescriptorSets* descSets,
+    std::vector<Imgine_VulkanModel> models,
+    uint32_t imageIndex,
+    uint32_t currentFrame)
+{
+    VkCommandBuffer cmdBuffer = commandBuffer->commandBuffer;
+
+    commandBuffer->beginRenderPass(renderPass, swapChain, imageIndex);
+
+    vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, getVulkanInstanceBind()->pipeline.graphicsPipeline);
+
+    VkViewport viewport{};
+    viewport.x = 0.0f;
+    viewport.y = 0.0f;
+    viewport.width = (float)swapChain->swapChainExtent.width;
+    viewport.height = (float)swapChain->swapChainExtent.height;
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+    vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
+
+    VkRect2D scissor{};
+    scissor.offset = { 0, 0 };
+    scissor.extent = swapChain->swapChainExtent;
+    vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
+
+    VkDeviceSize offsets[] = { 0 };
+    VkBuffer vertexBuffers[] = { models[0].vertexBuffer };
+
+    vkCmdBindVertexBuffers(cmdBuffer, 0, 1, vertexBuffers, offsets);
+
+    vkCmdBindIndexBuffer(cmdBuffer, models[0].indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+    vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, layout->pipelineLayout, 0, 1, &descSets->descriptorSets[currentFrame], 0, nullptr);
+
+    vkCmdDrawIndexed(cmdBuffer, models[0].indexBufferSize, 1, 0, 0, 0);
+    endRenderPass(commandBuffer);
+}
+
 void Imgine_VulkanRenderPassManager::endRenderPass(Imgine_CommandBuffer* commandBuffer) {
     commandBuffer->endRenderPass();
     commandBuffer->end();

@@ -43,7 +43,10 @@ void Imgine_Vulkan::initVulkan(GLFWwindow* window)
     createTextureImage();
     
     //Shader buffer data
-    model.Allocate(this,mesh);
+    //model.Allocate(this,mesh);
+    Imgine_AssetLoader* loader = Imgine_AssetLoader::GetInstance();
+    models = std::move(loader->loadModels(this, "models/viking_room.obj"));
+
 
 
     //Uniform data
@@ -151,48 +154,11 @@ void Imgine_Vulkan::cleanupSwapChain()
     swapChain.CleanupSwapChain();
 }
 
-/// <summary>
-/// Use a staging buffer to map and copy vertex data, and allocate device local memory vertex buffer to copy to
-/// </summary>
-void Imgine_Vulkan::createVertexBuffer()
-{
-    VkDeviceSize bufferSize = sizeof(mesh.vertices[0]) * mesh.vertices.size();
-    
-    VkBuffer stagingBuffer;
-    VmaAllocation  stagingAllocation;
-    
-    createTemporaryBuffer(this, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, stagingBuffer, stagingAllocation);
-
-    void* mappedData;
-    copyMappedMemorytoAllocation(this, mesh.vertices.data(), stagingAllocation, static_cast<uint32_t>(mesh.vertices.size()), &mappedData);
-
-    createBuffer(this, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, model.vertexBuffer, model.vertexBufferAllocation);
-
-    copyBuffer(this, stagingBuffer, model.vertexBuffer, bufferSize);
-
-    destroyBuffer(this, stagingBuffer, stagingAllocation);
-}
-
-void Imgine_Vulkan::createIndexBuffer() {
-    VkDeviceSize bufferSize = sizeof(mesh.indices[0]) * mesh.indices.size();
-
-    VkBuffer stagingBuffer;
-    VmaAllocation  stagingAllocation;
-    createTemporaryBuffer(this,bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, stagingBuffer, stagingAllocation);
-
-    void* mappedData;
-    copyMappedMemorytoAllocation(this, mesh.indices.data(), stagingAllocation, static_cast<uint32_t>(mesh.indices.size()), &mappedData);
-
-    createBuffer(this, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, model.indexBuffer, model.indexBufferAllocation);
-
-    copyBuffer(this, stagingBuffer, model.indexBuffer, bufferSize);
-    destroyBuffer(this, stagingBuffer, stagingAllocation);
-}
 
 void Imgine_Vulkan::createTextureImage()
 {
     Imgine_AssetLoader* assetLoader = Imgine_AssetLoader::GetInstance();
-    imageRef = assetLoader->loadTexture(this, "textures/texture.jpg", Imgine_AssetLoader::TextureTypes::DIFFUSE);
+    imageRef = assetLoader->loadTexture(this, "textures/viking_room.png", Imgine_AssetLoader::TextureTypes::DIFFUSE);
     view.view = createImageView(this, imageRef.GetTexture().GetImage(), VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
     view.imageRef = imageRef;
     createSampler(this, &sampler.sampler);
@@ -357,15 +323,12 @@ void Imgine_Vulkan::draw()
 
     vkResetCommandBuffer(commandBuffers[currentFrame]->commandBuffer, /*VkCommandBufferResetFlagBits*/ 0);
 
-    renderPassManager.beginRenderPass(renderPass, 
-        commandBuffers[currentFrame], 
+    renderPassManager.beginRenderPass(renderPass,
+        commandBuffers[currentFrame],
         &swapChain,
         &layout,
         &uniformDescriptorSets,
-        model.vertexBuffer,
-        static_cast<uint32_t>(mesh.vertices.size()), 
-        model.indexBuffer,
-        static_cast<uint32_t>(mesh.indices.size()), 
+        models,
         imageIndex,
         currentFrame);
 
@@ -435,9 +398,13 @@ void Imgine_Vulkan::cleanup()
     descriptorPool.cleanup(&uniformDescriptorSets);
     layout.cleanup();
 
-    mesh.Cleanup();
-    model.Cleanup(this);
 
+    //Clean Models
+    for (Imgine_VulkanModel model : models)
+    {
+        model.Cleanup(this);
+    }
+    models.clear();
 
     Imgine_AssetLoader::GetInstance()->Cleanup(this);
 

@@ -80,24 +80,8 @@ public:
 
     uint32_t currentFrame = 0;
 
+    std::vector<Imgine_VulkanModel> models;
 
-    Imgine_Mesh mesh = Imgine_Mesh({
-            {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-            {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-            {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-            {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
-
-            {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-            {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-            {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-            {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
-        }, 
-        { 
-            0, 1, 2, 2, 3, 0,
-            4, 5, 6, 6, 7, 4
-        }
-    );
-    Imgine_VulkanModel model;
 
     //Image data
     Imgine_TextureRef imageRef;
@@ -133,18 +117,10 @@ private:
     void createInstance();
     void createGLFWSurface(GLFWwindow* window);
     void createSyncObjects();
-    void createVertexBuffer();
-    void createIndexBuffer();
     void createTextureImage();
     void createDepthRessources();
     
 
-    /// <summary>
-    /// TODO : create a new swapChain, store current in oldSwapChain of VkSwapchainCreateInfoKHR, delete old as soon as useless
-    /// to keep drawing with old while starting drawing with new
-    /// </summary>
-    /// <param name="device"></param>
-    /// <returns></returns>
     void recreateSwapChain();
     void cleanupSwapChain();
 

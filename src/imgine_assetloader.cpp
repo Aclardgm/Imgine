@@ -27,11 +27,11 @@ void loadImage(Imgine_Vulkan* instance,std::string path,VkImage* image, VmaAlloc
     stbi_image_free(pixels);
 }
 
-void loadMesh(Imgine_Vulkan* instance, std::string path, VkImage* image, VmaAllocation* allocation)
+std::vector<Imgine_Mesh> loadMeshes(Imgine_Vulkan* instance, std::string path)
 {
     std::vector<Imgine_Mesh> meshes;
-
     AssimpImportScene(instance,path, meshes);
+    return std::move(meshes);
 }
 
 //Check if texture already loaded, return no value optional if not loaded
@@ -91,7 +91,18 @@ Imgine_TextureRef Imgine_AssetLoader::loadTexture(Imgine_Vulkan* instance, const
 }
 
 
-Imgine_MeshRef Imgine_AssetLoader::loadModel(const char* path)
+std::vector<Imgine_VulkanModel> Imgine_AssetLoader::loadModels(Imgine_Vulkan*instance, const char* path)
 {
-    return Imgine_MeshRef();
+    std::vector<Imgine_Mesh> meshes = loadMeshes(instance, path);
+    std::vector<Imgine_VulkanModel> models;
+    for (Imgine_Mesh& mesh : meshes)
+    {
+        //TODO check mesh already loaded
+        loadedMeshes.push_back(mesh);
+
+        models.push_back(std::move(Imgine_VulkanModel(instance, loadedMeshes[loadedMeshes.size() - 1])));
+    }
+     
+
+    return models;
 }

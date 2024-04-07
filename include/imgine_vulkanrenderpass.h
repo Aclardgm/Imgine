@@ -10,6 +10,7 @@ struct Imgine_SwapChain;
 struct Imgine_CommandBuffer;
 struct Imgine_VulkanDescriptorSets;
 struct Imgine_VulkanLayout;
+struct Imgine_VulkanModel;
 
 template<typename T>
 concept SWAPCHAIN = std::is_base_of_v<Imgine_SwapChain, T>;
@@ -54,6 +55,18 @@ struct Imgine_VulkanRenderPassManager : public Imgine_VulkanInstanceBind {
         uint32_t indexBufferSize,
         uint32_t imageIndex,
         uint32_t currentFrame);
+
+
+    void beginRenderPass(
+        Imgine_VulkanRenderPass* renderPass,
+        Imgine_CommandBuffer* commandBuffer,
+        Imgine_SwapChain* swapChain,
+        Imgine_VulkanLayout* layout,
+        Imgine_VulkanDescriptorSets* descSets,
+        std::vector<Imgine_VulkanModel> models,
+        uint32_t imageIndex,
+        uint32_t currentFrame);
+
     void endRenderPass(Imgine_CommandBuffer* commandBuffer);
     Imgine_VulkanRenderPass* CreateRenderPass(Imgine_SwapChain* swapChain);
 

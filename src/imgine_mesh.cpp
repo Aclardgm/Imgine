@@ -31,6 +31,8 @@ void Imgine_VulkanModel::Allocate(Imgine_Vulkan* instance, Imgine_Mesh& mesh)
 
     destroyBuffer(instance, stagingBuffer, stagingAllocation);
 
+    vertexBufferSize = mesh.vertices.size();
+
 
     VkBuffer stagingIndexBuffer;
     VmaAllocation  stagingIndexAllocation;
@@ -47,6 +49,7 @@ void Imgine_VulkanModel::Allocate(Imgine_Vulkan* instance, Imgine_Mesh& mesh)
     copyBuffer(instance, stagingIndexBuffer, indexBuffer, bufferIndexSize);
     destroyBuffer(instance, stagingIndexBuffer, stagingIndexAllocation);
 
+    indexBufferSize = mesh.indices.size();
 }
 
 void Imgine_VulkanModel::Cleanup(Imgine_Vulkan* instance)

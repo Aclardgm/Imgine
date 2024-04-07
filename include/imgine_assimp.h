@@ -28,7 +28,7 @@ std::vector<Imgine_TextureRef> loadMaterialTextures(
 
 void processNode(Imgine_Vulkan* instance, aiNode* node, const aiScene* scene, std::vector<Imgine_Mesh>& meshes);
 
-Imgine_Mesh&& processMesh(Imgine_Vulkan* instance, aiMesh* mesh, const aiScene* scene);
+Imgine_Mesh processMesh(Imgine_Vulkan* instance, aiMesh* mesh, const aiScene* scene);
 
 
 

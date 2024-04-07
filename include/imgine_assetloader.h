@@ -13,7 +13,7 @@ struct Imgine_Vulkan;
 
 void loadImage(Imgine_Vulkan* instance, std::string path, VkImage* image, VmaAllocation* allocation);
 
-void loadMesh(Imgine_Vulkan* instance, std::string path, VkImage* image, VmaAllocation* allocation);
+std::vector<Imgine_Mesh> loadMeshes(Imgine_Vulkan* instance, std::string path);
 
 
 
@@ -51,7 +51,7 @@ public:
 	Imgine_TextureRef loadTexture(Imgine_Vulkan* instance, const char* path, std::string typeName);
 	//Check if texture exist, load it if not and return corresponding ref
 	Imgine_TextureRef loadTexture(Imgine_Vulkan* instance, const char* path, TextureTypes type);
-	Imgine_MeshRef loadModel(const char* path);
+	std::vector<Imgine_VulkanModel> loadModels(Imgine_Vulkan* instance, const char* path);
 
 
 	std::vector<Imgine_Texture> loadedTextures;
