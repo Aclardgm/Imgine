@@ -68,7 +68,7 @@ void Imgine_Vulkan::initVulkan(GLFWwindow* window)
 
 void Imgine_Vulkan::createInstance()
 {
-    if (enableValidationLayers && !checkValidationLayerSupport(validationLayers)) {
+    if (enableValidationLayers && !imgine::checkValidationLayerSupport(validationLayers)) {
         throw std::runtime_error("validation layers requested, but not available!");
     }
 
@@ -93,7 +93,7 @@ void Imgine_Vulkan::createInstance()
         createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
         createInfo.ppEnabledLayerNames = validationLayers.data();
 
-        populateDebugMessengerCreateInfo(debugCreateInfo);
+        imgine::populateDebugMessengerCreateInfo(debugCreateInfo);
         createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
     }
     else {
@@ -102,9 +102,14 @@ void Imgine_Vulkan::createInstance()
         createInfo.pNext = nullptr;
     }
 
-    if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
+    CHECK_VK(
+        "failed to create instance!",
+        vkCreateInstance(&createInfo, nullptr, &instance)
+    )
+
+    /*if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
         throw std::runtime_error("failed to create instance!");
-    }
+    }*/
 }
 bool Imgine_Vulkan::isDeviceSuitable(VkPhysicalDevice device)
 {
@@ -166,7 +171,7 @@ void Imgine_Vulkan::createTextureImage()
 
 void Imgine_Vulkan::createDepthRessources()
 {
-    VkFormat depthFormat = findDepthFormat(physicalDevice);
+    VkFormat depthFormat = imgine::findDepthFormat(physicalDevice);
 
     createImage(this,swapChain.swapChainExtent.width, swapChain.swapChainExtent.height, depthFormat, 
         VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
@@ -176,9 +181,15 @@ void Imgine_Vulkan::createDepthRessources()
 
 void Imgine_Vulkan::createGLFWSurface(GLFWwindow* window)
 {
-    if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS) {
+
+    CHECK_VK(
+        "failed to create window surface!",
+        glfwCreateWindowSurface(instance, window, nullptr, &surface)
+    );
+
+   /* if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS) {
         throw std::runtime_error("failed to create window surface!");
-    }
+    }*/
 }
 bool Imgine_Vulkan::checkDeviceExtensionSupport(VkPhysicalDevice device)
 {
@@ -198,16 +209,25 @@ bool Imgine_Vulkan::checkDeviceExtensionSupport(VkPhysicalDevice device)
         return requiredExtensions.empty();
     }
 }
+
 void Imgine_Vulkan::setupDebugMessenger()
 {
+
+    using namespace imgine;
+
     if (!enableValidationLayers) return;
 
     VkDebugUtilsMessengerCreateInfoEXT createInfo;
     populateDebugMessengerCreateInfo(createInfo);
 
-    if (CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS) {
+
+    CHECK_VK(
+        "failed to set up debug messenger!",
+        CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger)
+    )
+    /*if (CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS) {
         throw std::runtime_error("failed to set up debug messenger!");
-    }
+    }*/
 }
 void Imgine_Vulkan::pickPhysicalDevice()
 {
@@ -273,9 +293,16 @@ void Imgine_Vulkan::createLogicalDevice()
         createInfo.enabledLayerCount = 0;
     }
 
-    if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS) {
+
+    CHECK_VK(
+        "failed to create logical device!",
+        vkCreateDevice(physicalDevice, &createInfo, nullptr, &device)
+    )
+
+
+    /*if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS) {
         throw std::runtime_error("failed to create logical device!");
-    }
+    }*/
 
     vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
     vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
@@ -294,15 +321,23 @@ void Imgine_Vulkan::createSyncObjects() {
     {
         swapChain.imageAquiredSemaphores[i].setVulkanInstanceBind(this);
         commandBufferManager.getSemaphores()[i].setVulkanInstanceBind(this);
-        if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &swapChain.imageAquiredSemaphores[i].semaphore) != VK_SUCCESS ||
-            vkCreateSemaphore(device, &semaphoreInfo, nullptr, &commandBufferManager.getSemaphores()[i].semaphore) != VK_SUCCESS ||
-            vkCreateFence(device, &fenceInfo, nullptr, &fences[i]->fence) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create semaphores!");
-        }
+
+        CHECK_VK(
+            "failed to create semaphores!", 
+                vkCreateSemaphore(device, &semaphoreInfo, nullptr, &swapChain.imageAquiredSemaphores[i].semaphore) |
+                vkCreateSemaphore(device, &semaphoreInfo, nullptr, &commandBufferManager.getSemaphores()[i].semaphore) |
+                vkCreateFence(device, &fenceInfo, nullptr, &fences[i]->fence)
+        )
+
+        //if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &swapChain.imageAquiredSemaphores[i].semaphore) != VK_SUCCESS ||
+        //    vkCreateSemaphore(device, &semaphoreInfo, nullptr, &commandBufferManager.getSemaphores()[i].semaphore) != VK_SUCCESS ||
+        //    vkCreateFence(device, &fenceInfo, nullptr, &fences[i]->fence) != VK_SUCCESS) {
+        //    throw std::runtime_error("failed to create semaphores!");
+        //}
     }
 }
 
-void Imgine_Vulkan::draw()
+uint32_t Imgine_Vulkan::draw()
 {
     vkWaitForFences(device, 1, &fences[currentFrame]->fence, VK_TRUE, UINT64_MAX);
 
@@ -311,10 +346,14 @@ void Imgine_Vulkan::draw()
 
     if (res == VK_ERROR_OUT_OF_DATE_KHR) {
         recreateSwapChain();
-        return;
+        return imageIndex;
     }
     else if(res != VK_SUCCESS && res != VK_SUBOPTIMAL_KHR) {
-        throw std::runtime_error("failed recreate swap chain image !");
+        CHECK_VK(
+            "failed recreate swap chain image !",
+            res
+        )
+        //throw std::runtime_error("failed recreate swap chain image !");
     }
 
     uniformBuffer.Update(swapChain.swapChainExtent,currentFrame);
@@ -332,10 +371,21 @@ void Imgine_Vulkan::draw()
         imageIndex,
         currentFrame);
 
+    return imageIndex;
+}
+
+void Imgine_Vulkan::enddraw()
+{
+    renderPassManager.endRenderPass(commandBuffers[currentFrame]);
+
+}
+
+void Imgine_Vulkan::present(uint32_t imageIndex)
+{
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-    VkSemaphore waitSemaphores[] = { swapChain.imageAquiredSemaphores[currentFrame].semaphore};
+    VkSemaphore waitSemaphores[] = { swapChain.imageAquiredSemaphores[currentFrame].semaphore };
     VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
     submitInfo.waitSemaphoreCount = 1;
     submitInfo.pWaitSemaphores = waitSemaphores;
@@ -344,13 +394,18 @@ void Imgine_Vulkan::draw()
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &commandBuffers[currentFrame]->commandBuffer;
 
-    VkSemaphore signalSemaphores[] = { commandBufferManager.getSemaphores()[currentFrame].semaphore};
+    VkSemaphore signalSemaphores[] = { commandBufferManager.getSemaphores()[currentFrame].semaphore };
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
-    if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, fences[currentFrame]->fence) != VK_SUCCESS) {
+
+    CHECK_VK(
+        "failed to submit draw command buffer!",
+        vkQueueSubmit(graphicsQueue, 1, &submitInfo, fences[currentFrame]->fence))
+
+    /*if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, fences[currentFrame]->fence) != VK_SUCCESS) {
         throw std::runtime_error("failed to submit draw command buffer!");
-    }
+    }*/
 
     VkPresentInfoKHR presentInfo{};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -364,15 +419,17 @@ void Imgine_Vulkan::draw()
 
     presentInfo.pImageIndices = &imageIndex;
 
-    res = vkQueuePresentKHR(presentQueue, &presentInfo);
+    VkResult res = vkQueuePresentKHR(presentQueue, &presentInfo);
 
 
     if (res == VK_ERROR_OUT_OF_DATE_KHR || res == VK_SUBOPTIMAL_KHR || Imgine_Application::getInstance()->window.framebufferResized) {
         Imgine_Application::getInstance()->window.framebufferResized = false;
         recreateSwapChain();
     }
-    else if (res != VK_SUCCESS) {
-        throw std::runtime_error("failed present swap chain image !");
+    else {
+        
+        imgine::check_vk_result(res, "failed present swap chain image !");
+        //throw std::runtime_error("failed present swap chain image !");
     }
 
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
@@ -422,7 +479,7 @@ void Imgine_Vulkan::cleanup()
     vkDestroyDevice(device, nullptr);
 
     if (enableValidationLayers) {
-        DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
+        imgine::DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
     }
 
     vkDestroySurfaceKHR(instance, surface, nullptr);

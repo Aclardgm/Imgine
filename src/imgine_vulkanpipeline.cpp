@@ -1,6 +1,6 @@
 #include "imgine_vulkanpipeline.h"
 #include "imgine_vulkan.h"
-
+#include "imgine_vulkanhelpers.h"
 
 void Imgine_VulkanPipeline::cleanup(VkPipelineLayout layout)
 {
@@ -116,9 +116,14 @@ void Imgine_VulkanPipeline::createGraphicsPipeline(Imgine_VulkanLayout* layout) 
     pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(layout->descriptorSetsLayout.layouts.size());
     pipelineLayoutInfo.pSetLayouts = layout->descriptorSetsLayout.layouts.data();
 
-    if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &layout->pipelineLayout) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create pipeline layout!");
-    }
+    CHECK_VK(
+        "failed to create pipeline layout!",
+        vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &layout->pipelineLayout)
+    )
+
+    //if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &layout->pipelineLayout) != VK_SUCCESS) {
+    //    throw std::runtime_error("failed to create pipeline layout!");
+    //}
 
 
 
@@ -139,9 +144,14 @@ void Imgine_VulkanPipeline::createGraphicsPipeline(Imgine_VulkanLayout* layout) 
     pipelineInfo.subpass = 0;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-    if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create graphics pipeline!");
-    }
+    CHECK_VK(
+        "failed to create graphics pipeline!",
+        vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline)
+    )
+
+    //if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS) {
+    //    throw std::runtime_error("failed to create graphics pipeline!");
+    //}
 
     vkDestroyShaderModule(getVulkanInstanceBind()->GetDevice(), fragShaderModule, nullptr);
     vkDestroyShaderModule(getVulkanInstanceBind()->GetDevice(), vertShaderModule, nullptr);
@@ -155,10 +165,16 @@ VkShaderModule Imgine_VulkanPipeline::createShaderModule(const std::vector<char>
     createInfo.codeSize = code.size();
     createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
 
+
     VkShaderModule shaderModule;
-    if (vkCreateShaderModule(getVulkanInstanceBind()->GetDevice(), &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create shader module!");
-    }
+    
+    CHECK_VK(
+        "failed to create shader module!",
+        vkCreateShaderModule(getVulkanInstanceBind()->GetDevice(), &createInfo, nullptr, &shaderModule)
+    )
+    //if (vkCreateShaderModule(getVulkanInstanceBind()->GetDevice(), &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
+    //    throw std::runtime_error("failed to create shader module!");
+    //}
 
     return shaderModule;
 }

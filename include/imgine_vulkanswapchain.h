@@ -48,7 +48,7 @@ public:
     Imgine_SwapChain(Imgine_Vulkan* _instance) : Imgine_VulkanInstanceBind(_instance){}
 
     VkFormat GetFormat() { return swapChainImageFormat; }
-
+    uint32_t GetImageCount() { return swapChainImages.size(); }
 
     void createSwapChain(VkSurfaceKHR surface);
 

@@ -249,10 +249,19 @@ VkImageView createImageView(Imgine_Vulkan* instance, VkImage image, VkFormat for
     viewInfo.subresourceRange.baseArrayLayer = 0;
     viewInfo.subresourceRange.layerCount = 1;
 
+    
     VkImageView imageView;
-    if (vkCreateImageView(instance->GetDevice(), &viewInfo, nullptr, &imageView) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create image view!");
-    }
+
+
+    CHECK_VK(
+        "failed to create image view!",
+        vkCreateImageView(instance->GetDevice(), &viewInfo, nullptr, &imageView)
+
+    )
+
+    //if (vkCreateImageView(instance->GetDevice(), &viewInfo, nullptr, &imageView) != VK_SUCCESS) {
+    //    throw std::runtime_error("failed to create image view!");
+    //}
 
     return imageView;
 }
@@ -271,9 +280,15 @@ VkImageView createImageView(Imgine_Vulkan* instance, VkImage image, VkFormat for
     viewInfo.subresourceRange.layerCount = 1;
 
     VkImageView imageView;
-    if (vkCreateImageView(instance->GetDevice(), &viewInfo, nullptr, &imageView) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create image view!");
-    }
+
+    CHECK_VK(
+        "failed to create image view!",
+        vkCreateImageView(instance->GetDevice(), &viewInfo, nullptr, &imageView)
+    )
+
+    //if (vkCreateImageView(instance->GetDevice(), &viewInfo, nullptr, &imageView) != VK_SUCCESS) {
+    //    throw std::runtime_error("failed to create image view!");
+    //}
 
     return imageView;
 }
@@ -297,9 +312,14 @@ void createSampler(Imgine_Vulkan* instance, VkSampler* sampler) {
     samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
     samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 
-    if (vkCreateSampler(instance->GetDevice(), &samplerInfo, nullptr, sampler) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create texture sampler!");
-    }
+    CHECK_VK(
+        "failed to create texture sampler!",
+        vkCreateSampler(instance->GetDevice(), &samplerInfo, nullptr, sampler)
+    )
+
+    //if (vkCreateSampler(instance->GetDevice(), &samplerInfo, nullptr, sampler) != VK_SUCCESS) {
+    //    throw std::runtime_error("failed to create texture sampler!");
+    //}
 }
 
 void destroyImage(Imgine_Vulkan* instance, VkImage image, VmaAllocation allocation)

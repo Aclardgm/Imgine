@@ -14,6 +14,8 @@
 #include "imgine_vulkandescriptorsets.h"
 #include "imgine_assetloader.h"
 
+#include "imgine_imgui.h"
+
 const int MAX_FRAMES_IN_FLIGHT = 2;
 struct GLFWwindow;
 
@@ -32,7 +34,9 @@ public:
         descriptorPool(this) {}
     void initVulkan(GLFWwindow* window);
     void cleanup();
-    void draw();
+    uint32_t draw();
+    void enddraw();
+    void present(uint32_t imageIndex);
 
     const VkPhysicalDevice GetPhysicalDevice() const {
         return physicalDevice;
@@ -94,6 +98,7 @@ public:
 
 
     VmaAllocator allocator;
+
 
 private:
 

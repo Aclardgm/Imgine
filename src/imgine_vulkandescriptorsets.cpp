@@ -1,6 +1,7 @@
 #include "imgine_vulkandescriptorsets.h"
 #include "imgine_vulkan.h"
 #include "imgine_vulkanimage.h"
+#include "imgine_vulkanhelpers.h"
 
 VkDescriptorSetLayout* Imgine_VulkanDescriptorsSetsLayout::createDescriptorTexturedSetLayout()
 {
@@ -28,9 +29,15 @@ VkDescriptorSetLayout* Imgine_VulkanDescriptorsSetsLayout::createDescriptorTextu
     layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
     layoutInfo.pBindings = bindings.data();
 
-    if (vkCreateDescriptorSetLayout(getVulkanInstanceBind()->GetDevice(), &layoutInfo, nullptr, &layouts[layouts.size() - 1]) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create descriptor set layout!");
-    }
+    CHECK_VK(
+        "failed to create descriptor set layout!",
+        vkCreateDescriptorSetLayout(getVulkanInstanceBind()->GetDevice(), &layoutInfo, nullptr, &layouts[layouts.size() - 1])
+    )
+
+
+    //if (vkCreateDescriptorSetLayout(getVulkanInstanceBind()->GetDevice(), &layoutInfo, nullptr, &layouts[layouts.size() - 1]) != VK_SUCCESS) {
+    //    throw std::runtime_error("failed to create descriptor set layout!");
+    //}
     return &layouts[layouts.size() - 1];
 }
 VkDescriptorSetLayout* Imgine_VulkanDescriptorsSetsLayout::createDescriptorSetLayout()
@@ -49,9 +56,14 @@ VkDescriptorSetLayout* Imgine_VulkanDescriptorsSetsLayout::createDescriptorSetLa
     layoutInfo.bindingCount = 1;
     layoutInfo.pBindings = &uboLayoutBinding;
 
-    if (vkCreateDescriptorSetLayout(getVulkanInstanceBind()->GetDevice(), &layoutInfo, nullptr, &layouts[layouts.size() - 1]) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create descriptor set layout!");
-    }
+    CHECK_VK(
+        "failed to create descriptor set layout!",
+        vkCreateDescriptorSetLayout(getVulkanInstanceBind()->GetDevice(), &layoutInfo, nullptr, &layouts[layouts.size() - 1])
+    )
+
+    //if (vkCreateDescriptorSetLayout(getVulkanInstanceBind()->GetDevice(), &layoutInfo, nullptr, &layouts[layouts.size() - 1]) != VK_SUCCESS) {
+    //    throw std::runtime_error("failed to create descriptor set layout!");
+    //}
 
     return &layouts[layouts.size() - 1];
 }
@@ -70,9 +82,14 @@ void Imgine_VulkanDescriptorPool::createUniformPool()
     poolInfo.pPoolSizes = &poolSize;
     poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
 
-    if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
+    CHECK_VK(
+        "failed to create descriptor pool!",
+        vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool)
+    )
+
+   /* if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
         throw std::runtime_error("failed to create descriptor pool!");
-    }
+    }*/
 }
 
 
@@ -91,9 +108,39 @@ void Imgine_VulkanDescriptorPool::createUniformTexturedPool()
     poolInfo.pPoolSizes = poolSizes.data();
     poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
 
-    if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
+    CHECK_VK(
+        "failed to create descriptor pool!",
+        vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool)
+    )
+
+    /*if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
         throw std::runtime_error("failed to create descriptor pool!");
-    }
+    }*/
+}
+
+void Imgine_VulkanDescriptorPool::createTexturedPool()
+{
+    VkDevice device = getVulkanInstanceBind()->GetDevice();
+
+    VkDescriptorPoolSize pool_sizes[] =
+    {
+        { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 },
+    };
+    VkDescriptorPoolCreateInfo poolInfo = {};
+    poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+    poolInfo.maxSets = 1;
+    poolInfo.poolSizeCount = (uint32_t)IM_ARRAYSIZE(pool_sizes);
+    poolInfo.pPoolSizes = pool_sizes;
+
+
+    CHECK_VK(
+        "failed to create descriptor pool!",
+        vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool)
+    )
+    //if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
+    //    throw std::runtime_error("failed to create descriptor pool!");
+    //}
 }
 
 
@@ -113,9 +160,14 @@ void Imgine_VulkanDescriptorPool::allocateUBODescriptorsSets(
     allocInfo.pSetLayouts = layouts.data();
 
     setsDst->descriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
-    if (vkAllocateDescriptorSets(device, &allocInfo, setsDst->descriptorSets.data()) != VK_SUCCESS) {
-        throw std::runtime_error("failed to allocate descriptor sets!");
-    }
+    CHECK_VK(
+        "failed to allocate descriptor sets!",
+        vkAllocateDescriptorSets(device, &allocInfo, setsDst->descriptorSets.data())
+    )
+
+    //if (vkAllocateDescriptorSets(device, &allocInfo, setsDst->descriptorSets.data()) != VK_SUCCESS) {
+    //    throw std::runtime_error("failed to allocate descriptor sets!");
+    //}
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         VkDescriptorBufferInfo bufferInfo{};
@@ -156,9 +208,14 @@ void Imgine_VulkanDescriptorPool::allocateUBOTexturedDescriptorsSets(
     allocInfo.pSetLayouts = layouts.data();
 
     setsDst->descriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
-    if (vkAllocateDescriptorSets(device, &allocInfo, setsDst->descriptorSets.data()) != VK_SUCCESS) {
+    CHECK_VK(
+        "failed to allocate descriptor sets!",
+        vkAllocateDescriptorSets(device, &allocInfo, setsDst->descriptorSets.data())
+    )
+
+    /*if (vkAllocateDescriptorSets(device, &allocInfo, setsDst->descriptorSets.data()) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate descriptor sets!");
-    }
+    }*/
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         VkDescriptorBufferInfo bufferInfo{};

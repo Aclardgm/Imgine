@@ -25,9 +25,14 @@ void Imgine_SwapChain::createFrameBuffers() {
         framebufferInfo.height = swapChainExtent.height;
         framebufferInfo.layers = 1;
 
-        if (vkCreateFramebuffer(getVulkanInstanceBind()->GetDevice(), &framebufferInfo, nullptr, &swapChainFramebuffers[i]) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create framebuffer!");
-        }
+        CHECK_VK(
+            "failed to create framebuffer!",
+            vkCreateFramebuffer(getVulkanInstanceBind()->GetDevice(), &framebufferInfo, nullptr, &swapChainFramebuffers[i])
+        )
+
+        //if (vkCreateFramebuffer(getVulkanInstanceBind()->GetDevice(), &framebufferInfo, nullptr, &swapChainFramebuffers[i]) != VK_SUCCESS) {
+        //    throw std::runtime_error("failed to create framebuffer!");
+        //}
     }
 }
 void Imgine_SwapChain::createFrameBuffersWithDepth(Imgine_VulkanImageView* depthView) {
@@ -48,9 +53,15 @@ void Imgine_SwapChain::createFrameBuffersWithDepth(Imgine_VulkanImageView* depth
         framebufferInfo.height = swapChainExtent.height;
         framebufferInfo.layers = 1;
 
-        if (vkCreateFramebuffer(getVulkanInstanceBind()->GetDevice(), &framebufferInfo, nullptr, &swapChainFramebuffers[i]) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create framebuffer!");
-        }
+
+        CHECK_VK(
+            "failed to create framebuffer!",
+            vkCreateFramebuffer(getVulkanInstanceBind()->GetDevice(), &framebufferInfo, nullptr, &swapChainFramebuffers[i])
+        )
+
+        //if (vkCreateFramebuffer(getVulkanInstanceBind()->GetDevice(), &framebufferInfo, nullptr, &swapChainFramebuffers[i]) != VK_SUCCESS) {
+        //    throw std::runtime_error("failed to create framebuffer!");
+        //}
     }
 }
 void Imgine_SwapChain::createImageViews() {
@@ -108,9 +119,14 @@ void Imgine_SwapChain::createSwapChain(VkSurfaceKHR surface)
 
     VkDevice device = getVulkanInstanceBind()->GetDevice();
 
-    if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapChain) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create swap chain!");
-    }
+    CHECK_VK(
+        "failed to create swap chain!",
+        vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapChain)
+    )
+
+    //if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapChain) != VK_SUCCESS) {
+    //    throw std::runtime_error("failed to create swap chain!");
+    //}
 
     vkGetSwapchainImagesKHR(device, swapChain, &imageCount, nullptr);
     swapChainImages.resize(imageCount);

@@ -56,11 +56,13 @@ public:
 /// </summary>
 struct Imgine_VulkanDescriptorPool : public Imgine_VulkanInstanceBind
 {
+	friend class Imgine_Application;
 public:
-	Imgine_VulkanDescriptorPool(Imgine_Vulkan* instance) :  Imgine_VulkanInstanceBind(instance) {}
+	Imgine_VulkanDescriptorPool(Imgine_Vulkan* instance) :  Imgine_VulkanInstanceBind(instance), descriptorPool() {}
 
 	void createUniformPool();
 	void createUniformTexturedPool();
+	void createTexturedPool();
 	void cleanup(Imgine_VulkanDescriptorSets* dedicatedSets);
 	void allocateUBODescriptorsSets(
 		VkDescriptorSetLayout toAllocate, 

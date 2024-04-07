@@ -17,9 +17,15 @@ Imgine_CommandBuffer* Imgine_CommandBufferPool::allocateBuffers() {
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     allocInfo.commandBufferCount = 1;
 
-    if (vkAllocateCommandBuffers(getVulkanInstanceBind()->GetDevice(), &allocInfo, &(buffer->commandBuffer)) != VK_SUCCESS) {
+
+    CHECK_VK(
+        "failed to allocate command buffers!",
+        vkAllocateCommandBuffers(getVulkanInstanceBind()->GetDevice(), &allocInfo, &(buffer->commandBuffer))
+    )
+
+    /*if (vkAllocateCommandBuffers(getVulkanInstanceBind()->GetDevice(), &allocInfo, &(buffer->commandBuffer)) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate command buffers!");
-    }
+    }*/
     commandBuffers.push_back(buffer);
     return buffer;
 }
@@ -52,9 +58,14 @@ void Imgine_CommandBuffer::begin() {
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-    if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
-        throw std::runtime_error("failed to begin recording command buffer!");
-    }
+    CHECK_VK(
+        "failed to begin recording command buffer!",
+        vkBeginCommandBuffer(commandBuffer, &beginInfo) 
+    )
+
+    //if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
+    //    throw std::runtime_error("failed to begin recording command buffer!");
+    //}
 }
 
 
@@ -65,9 +76,14 @@ void Imgine_CommandBuffer::endRenderPass()
 }
 
 void Imgine_CommandBuffer::end() {
-    if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
-        throw std::runtime_error("failed to record command buffer!");
-    }
+    CHECK_VK(
+        "failed to record command buffer!",
+        vkEndCommandBuffer(commandBuffer)
+    )
+
+    //if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
+    //    throw std::runtime_error("failed to record command buffer!");
+    //}
 }
 
 void Imgine_CommandBufferPool::allocateBuffers(VkSurfaceKHR surface) {
@@ -79,9 +95,14 @@ void Imgine_CommandBufferPool::allocateBuffers(VkSurfaceKHR surface) {
     poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
 
-    if (vkCreateCommandPool(getVulkanInstanceBind()->GetDevice(), &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create command pool!");
-    }
+    CHECK_VK(
+        "failed to create command pool!",
+        vkCreateCommandPool(getVulkanInstanceBind()->GetDevice(), &poolInfo, nullptr, &commandPool)
+    )
+
+    //if (vkCreateCommandPool(getVulkanInstanceBind()->GetDevice(), &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
+    //    throw std::runtime_error("failed to create command pool!");
+    //}
 }
 
 

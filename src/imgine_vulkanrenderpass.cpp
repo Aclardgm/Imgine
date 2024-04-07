@@ -44,7 +44,7 @@ Imgine_VulkanRenderPass* Imgine_VulkanRenderPassBuilder<T>::build()
     colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
     VkAttachmentDescription depthAttachment{};
-    depthAttachment.format = findDepthFormat(getVulkanInstanceBind()->GetPhysicalDevice());
+    depthAttachment.format = imgine::findDepthFormat(getVulkanInstanceBind()->GetPhysicalDevice());
     depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
     depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -85,9 +85,14 @@ Imgine_VulkanRenderPass* Imgine_VulkanRenderPassBuilder<T>::build()
     renderPassInfo.dependencyCount = 1;
     renderPassInfo.pDependencies = &dependency;
 
-    if (vkCreateRenderPass(getVulkanInstanceBind()->GetDevice(), &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create render pass!");
-    }
+    CHECK_VK(
+        "failed to create render pass!",
+        vkCreateRenderPass(getVulkanInstanceBind()->GetDevice(), &renderPassInfo, nullptr, &renderPass)
+    )
+
+    //if (vkCreateRenderPass(getVulkanInstanceBind()->GetDevice(), &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
+    //    throw std::runtime_error("failed to create render pass!");
+    //}
     return new Imgine_VulkanRenderPass(getVulkanInstanceBind(), std::move(renderPass));
 }
 
@@ -141,7 +146,6 @@ void Imgine_VulkanRenderPassManager::beginRenderPass(
     vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, layout->pipelineLayout, 0, 1, &descSets->descriptorSets[currentFrame], 0, nullptr);
 
     vkCmdDrawIndexed(cmdBuffer, indexBufferSize, 1, 0, 0, 0);
-    endRenderPass(commandBuffer);
 }
 
 
@@ -186,7 +190,6 @@ void Imgine_VulkanRenderPassManager::beginRenderPass(
     vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, layout->pipelineLayout, 0, 1, &descSets->descriptorSets[currentFrame], 0, nullptr);
 
     vkCmdDrawIndexed(cmdBuffer, models[0].indexBufferSize, 1, 0, 0, 0);
-    endRenderPass(commandBuffer);
 }
 
 void Imgine_VulkanRenderPassManager::endRenderPass(Imgine_CommandBuffer* commandBuffer) {
