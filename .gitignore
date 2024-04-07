@@ -407,4 +407,4 @@ libs/
 out/build
 
 # Ignore CMakeSettings
-CMakeSettings.json
+/CMakeSettings.json
