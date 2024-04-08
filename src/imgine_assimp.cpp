@@ -4,25 +4,17 @@
 #include "imgine_vulkan.h"
 #include "imgine_types.h"
 
-#include <filesystem>
 
-bool AssimpImportScene(Imgine_Vulkan* instance, const std::string& pFile, std::vector<Imgine_Mesh>& meshes) {
+bool AssimpImportScene(
+    Imgine_Vulkan* instance, 
+    const std::string& pFile, 
+    std::vector<Imgine_Mesh>& meshes,
+    unsigned int flags) {
     // Create an instance of the Importer class
     Assimp::Importer importer;
 
     std::filesystem::path path = pFile;
     
-    unsigned int flags = aiProcess_CalcTangentSpace |
-        aiProcess_Triangulate |
-        aiProcess_JoinIdenticalVertices |
-        aiProcess_SortByPType;
-
-
-    //Obj files require flipping UVs
-    if (path.extension() == ".obj")
-    {
-        flags = flags | aiProcess_FlipUVs;
-    }
 
     // And have it read the given file with some example postprocessing
     // Usually - if speed is not the most important aspect for you - you'll
@@ -38,7 +30,7 @@ bool AssimpImportScene(Imgine_Vulkan* instance, const std::string& pFile, std::v
     }
 
     //Process nodes
-    processNode(instance,scene->mRootNode, scene, meshes);
+    processNode(instance,scene->mRootNode, scene, path, meshes);
 
 
 
@@ -47,20 +39,28 @@ bool AssimpImportScene(Imgine_Vulkan* instance, const std::string& pFile, std::v
 }
 
 
-void processNode(Imgine_Vulkan* instance, aiNode* node, const aiScene* scene, std::vector<Imgine_Mesh>& meshes) {
+void processNode(Imgine_Vulkan* instance, 
+    aiNode* node, 
+    const aiScene* scene,
+    std::filesystem::path path,
+    std::vector<Imgine_Mesh>& meshes) {
     for (unsigned int i = 0; i < node->mNumMeshes; i++)
     {
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-        meshes.push_back(std::move(processMesh(instance, mesh, scene)));
+        meshes.push_back(std::move(processMesh(instance, mesh, path, scene)));
     }
     // then do the same for each of its children
     for (unsigned int i = 0; i < node->mNumChildren; i++)
     {
-        processNode(instance, node->mChildren[i], scene, meshes);
+        processNode(instance, node->mChildren[i], scene, path, meshes);
     }
 }
 
-Imgine_Mesh processMesh(Imgine_Vulkan* instance, aiMesh* mesh, const aiScene* scene)
+Imgine_Mesh processMesh(
+    Imgine_Vulkan* instance, 
+    aiMesh* mesh,
+    std::filesystem::path path,
+    const aiScene* scene)
 {
     // data to fill
     std::vector<Imgine_Vertex> vertices;
@@ -136,16 +136,16 @@ Imgine_Mesh processMesh(Imgine_Vulkan* instance, aiMesh* mesh, const aiScene* sc
     // normal: texture_normalN
 
     // 1. diffuse maps
-    std::vector<Imgine_TextureRef> diffuseMapsRefs = loadMaterialTextures(instance,material, aiTextureType_DIFFUSE, Imgine_AssetLoader::TextureTypes::DIFFUSE);
+    std::vector<Imgine_TextureRef> diffuseMapsRefs = loadMaterialTextures(instance,material, aiTextureType_DIFFUSE, path, Imgine_AssetLoader::TextureTypes::DIFFUSE);
     textures.insert(textures.end(), diffuseMapsRefs.begin(), diffuseMapsRefs.end());
     // 2. specular maps
-    std::vector<Imgine_TextureRef> specularMapsRefs = loadMaterialTextures(instance, material, aiTextureType_SPECULAR, Imgine_AssetLoader::TextureTypes::SPECULAR);
+    std::vector<Imgine_TextureRef> specularMapsRefs = loadMaterialTextures(instance, material, aiTextureType_SPECULAR, path, Imgine_AssetLoader::TextureTypes::SPECULAR);
     textures.insert(textures.end(), specularMapsRefs.begin(), specularMapsRefs.end());
     // 3. normal maps
-    std::vector<Imgine_TextureRef> normalMapsRefs = loadMaterialTextures(instance, material, aiTextureType_HEIGHT, Imgine_AssetLoader::TextureTypes::NORMAL);
+    std::vector<Imgine_TextureRef> normalMapsRefs = loadMaterialTextures(instance, material, aiTextureType_HEIGHT, path, Imgine_AssetLoader::TextureTypes::NORMAL);
     textures.insert(textures.end(), normalMapsRefs.begin(), normalMapsRefs.end());
     // 4. height maps
-    std::vector<Imgine_TextureRef> heightMapsRefs = loadMaterialTextures(instance, material, aiTextureType_AMBIENT, Imgine_AssetLoader::TextureTypes::HEIGHT);
+    std::vector<Imgine_TextureRef> heightMapsRefs = loadMaterialTextures(instance, material, aiTextureType_AMBIENT, path, Imgine_AssetLoader::TextureTypes::HEIGHT);
     textures.insert(textures.end(), heightMapsRefs.begin(), heightMapsRefs.end());
 
     // return a mesh object created from the extracted mesh data
@@ -157,7 +157,11 @@ Imgine_Mesh processMesh(Imgine_Vulkan* instance, aiMesh* mesh, const aiScene* sc
 // checks all material textures of a given type and loads the textures if they're not loaded yet.
     // the required info is returned as a TextureRef struct.
 std::vector<Imgine_TextureRef> loadMaterialTextures(
-    Imgine_Vulkan* instance, aiMaterial* mat, aiTextureType type, std::string typeName)
+    Imgine_Vulkan* instance, 
+    aiMaterial* mat, 
+    aiTextureType type,
+    std::filesystem::path path,
+    std::string typeName)
 {
     std::vector<Imgine_TextureRef> textureRefs;
     for (unsigned int i = 0; i < mat->GetTextureCount(type); i++)
@@ -165,19 +169,27 @@ std::vector<Imgine_TextureRef> loadMaterialTextures(
         aiString str;
         mat->GetTexture(type, i, &str);
 
+        path = path.remove_filename();
+        path.append(str.C_Str());
+
+
         Imgine_AssetLoader* assetLoader = Imgine_AssetLoader::GetInstance();
 
-        Imgine_TextureRef ref = assetLoader->loadTexture(instance,str.C_Str(), typeName);
+        std::string _str = path.string();
+
+        Imgine_TextureRef ref = assetLoader->loadTexture(instance, _str.c_str(), typeName);
         textureRefs.push_back(ref);
     }
     return textureRefs;
 }
 
-// checks all material textures of a given type and loads the textures if they're not loaded yet.
-// the required info is returned as a TextureRef struct.
 std::vector<Imgine_TextureRef> loadMaterialTextures(
-    Imgine_Vulkan* instance, aiMaterial* mat, aiTextureType type, Imgine_AssetLoader::TextureTypes typeEnum)
+    Imgine_Vulkan* instance, 
+    aiMaterial* mat, 
+    aiTextureType type,
+    std::filesystem::path path,
+    Imgine_AssetLoader::TextureTypes typeEnum)
 {
     return loadMaterialTextures(
-        instance, mat, type, Imgine_AssetLoader::TextureTypeNames[typeEnum]);
+        instance, mat, type, path, Imgine_AssetLoader::TextureTypeNames[typeEnum]);
 }

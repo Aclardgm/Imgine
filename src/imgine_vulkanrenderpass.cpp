@@ -156,7 +156,7 @@ void Imgine_VulkanRenderPassManager::beginRenderPass(
     Imgine_SwapChain* swapChain,
     Imgine_VulkanLayout* layout,
     Imgine_VulkanDescriptorSets* descSets,
-    std::vector<Imgine_VulkanModel> models,
+    Imgine_Scene& scene,
     uint32_t imageIndex,
     uint32_t currentFrame)
 {
@@ -180,16 +180,19 @@ void Imgine_VulkanRenderPassManager::beginRenderPass(
     scissor.extent = swapChain->swapChainExtent;
     vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
 
-    VkDeviceSize offsets[] = { 0 };
-    VkBuffer vertexBuffers[] = { models[0].vertexBuffer };
+    for (Imgine_VulkanModel model : scene.models)
+    {
+        VkDeviceSize offsets[] = { 0 };
+        VkBuffer vertexBuffers[] = { model.vertexBuffer };
 
-    vkCmdBindVertexBuffers(cmdBuffer, 0, 1, vertexBuffers, offsets);
+        vkCmdBindVertexBuffers(cmdBuffer, 0, 1, vertexBuffers, offsets);
 
-    vkCmdBindIndexBuffer(cmdBuffer, models[0].indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+        vkCmdBindIndexBuffer(cmdBuffer,model.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-    vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, layout->pipelineLayout, 0, 1, &descSets->descriptorSets[currentFrame], 0, nullptr);
+        vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, layout->pipelineLayout, 0, 1, &descSets->descriptorSets[currentFrame], 0, nullptr);
 
-    vkCmdDrawIndexed(cmdBuffer, models[0].indexBufferSize, 1, 0, 0, 0);
+        vkCmdDrawIndexed(cmdBuffer, model.indexBufferSize, 1, 0, 0, 0);
+    }
 }
 
 void Imgine_VulkanRenderPassManager::endRenderPass(Imgine_CommandBuffer* commandBuffer) {

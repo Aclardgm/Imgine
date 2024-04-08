@@ -9,6 +9,7 @@
 #include "imgine_assimp.h"
 #include "imgine_types.h"
 
+
 void loadImage(Imgine_Vulkan* instance,std::string path,VkImage* image, VmaAllocation* allocation)
 {
     VkDevice device = instance->GetDevice();
@@ -27,11 +28,11 @@ void loadImage(Imgine_Vulkan* instance,std::string path,VkImage* image, VmaAlloc
     stbi_image_free(pixels);
 }
 
-std::vector<Imgine_Mesh> loadMeshes(Imgine_Vulkan* instance, std::string path)
+std::vector<Imgine_Mesh> loadMeshes(Imgine_Vulkan* instance, std::string path,unsigned int flags)
 {
     std::vector<Imgine_Mesh> meshes;
-    AssimpImportScene(instance,path, meshes);
-    return std::move(meshes);
+    AssimpImportScene(instance,path, meshes,flags);
+    return meshes;
 }
 
 //Check if texture already loaded, return no value optional if not loaded
@@ -93,7 +94,12 @@ Imgine_TextureRef Imgine_AssetLoader::loadTexture(Imgine_Vulkan* instance, const
 
 std::vector<Imgine_VulkanModel> Imgine_AssetLoader::loadModels(Imgine_Vulkan*instance, const char* path)
 {
-    std::vector<Imgine_Mesh> meshes = loadMeshes(instance, path);
+    return loadModels(instance, path, aiProcess_CalcTangentSpace | aiProcess_Triangulate | aiProcess_JoinIdenticalVertices | aiProcess_SortByPType);
+}
+
+std::vector<Imgine_VulkanModel> Imgine_AssetLoader::loadModels(Imgine_Vulkan* instance, const char* path, unsigned int flags)
+{
+    std::vector<Imgine_Mesh> meshes = loadMeshes(instance, path,flags);
     std::vector<Imgine_VulkanModel> models;
     for (Imgine_Mesh& mesh : meshes)
     {
@@ -102,7 +108,5 @@ std::vector<Imgine_VulkanModel> Imgine_AssetLoader::loadModels(Imgine_Vulkan*ins
 
         models.push_back(std::move(Imgine_VulkanModel(instance, loadedMeshes[loadedMeshes.size() - 1])));
     }
-     
-
     return models;
 }

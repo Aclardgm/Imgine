@@ -30,11 +30,13 @@ void Imgine_GLFWWindow::Cleanup()
 
 void Imgine_GLFWWindow::GetWindowSize(int* width, int* height)
 {
-    if (GLFWWindow != nullptr) {
+
+    glfwGetFramebufferSize(GLFWWindow, width, height);
+   /* if (GLFWWindow != nullptr) {
         glfwGetFramebufferSize(GLFWWindow, width, height);
     }
     else {
         *width = 0;
         *height = 0;
-    }
+    }*/
 }

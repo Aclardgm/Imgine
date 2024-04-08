@@ -39,9 +39,6 @@ void CheckFlecs()
 
     e.destruct();
     std::cout << e.is_alive() << std::endl; // false!
-
-
-
 }
 
 

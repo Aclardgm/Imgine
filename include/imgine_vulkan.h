@@ -13,6 +13,7 @@
 #include "imgine_vulkanpipeline.h"
 #include "imgine_vulkandescriptorsets.h"
 #include "imgine_assetloader.h"
+#include "imgine_scene.h"
 
 #include "imgine_imgui.h"
 
@@ -31,7 +32,8 @@ public:
         fenceManager(this),
         uniformBuffer(this),
         uniformDescriptorSets(this),
-        descriptorPool(this) {}
+        descriptorPool(this),
+        scene(this) {}
     void initVulkan(GLFWwindow* window);
     void cleanup();
     uint32_t draw();
@@ -82,10 +84,8 @@ public:
     Imgine_VulkanFenceManager fenceManager;
     std::vector<Imgine_VulkanFence*> fences;
 
-    uint32_t currentFrame = 0;
 
-    std::vector<Imgine_VulkanModel> models;
-
+    Imgine_Scene scene;
 
     //Image data
     Imgine_TextureRef imageRef;
@@ -99,6 +99,7 @@ public:
 
     VmaAllocator allocator;
 
+    uint32_t currentFrame = 0;
 
 private:
 

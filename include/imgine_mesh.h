@@ -136,6 +136,7 @@ struct Imgine_VulkanModel {
         Allocate(instance, mesh);
     }
 
+    std::vector<Imgine_TextureRef> textures;
     VkBuffer vertexBuffer;
     VmaAllocation vertexBufferAllocation;
     VkBuffer indexBuffer;
@@ -144,8 +145,6 @@ struct Imgine_VulkanModel {
     uint32_t indexBufferSize;
     void Allocate(Imgine_Vulkan* instance, Imgine_Mesh& mesh);
     void Cleanup(Imgine_Vulkan* instance);
-
-
 
 
     Imgine_VulkanModel& operator=(Imgine_VulkanModel&& rhs) { 

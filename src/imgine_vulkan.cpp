@@ -40,14 +40,10 @@ void Imgine_Vulkan::initVulkan(GLFWwindow* window)
     createDepthRessources();
     swapChain.createFrameBuffersWithDepth(&depthView);
 
+    scene.loadScene(VikingRoom);
     createTextureImage();
+
     
-    //Shader buffer data
-    //model.Allocate(this,mesh);
-    Imgine_AssetLoader* loader = Imgine_AssetLoader::GetInstance();
-    models = std::move(loader->loadModels(this, "models/viking_room.obj"));
-
-
 
     //Uniform data
     uniformBuffer.Create();
@@ -367,7 +363,7 @@ uint32_t Imgine_Vulkan::draw()
         &swapChain,
         &layout,
         &uniformDescriptorSets,
-        models,
+        scene,
         imageIndex,
         currentFrame);
 
@@ -457,11 +453,10 @@ void Imgine_Vulkan::cleanup()
 
 
     //Clean Models
-    for (Imgine_VulkanModel model : models)
+    for (Imgine_VulkanModel model : scene.models)
     {
         model.Cleanup(this);
     }
-    models.clear();
 
     Imgine_AssetLoader::GetInstance()->Cleanup(this);
 

@@ -50,6 +50,8 @@ void Imgine_VulkanModel::Allocate(Imgine_Vulkan* instance, Imgine_Mesh& mesh)
     destroyBuffer(instance, stagingIndexBuffer, stagingIndexAllocation);
 
     indexBufferSize = mesh.indices.size();
+
+    textures = mesh.textures;
 }
 
 void Imgine_VulkanModel::Cleanup(Imgine_Vulkan* instance)
