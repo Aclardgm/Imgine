@@ -18,7 +18,7 @@ public:
         instance = _instance;
     }
 
-private:
+protected:
     Imgine_Vulkan* instance;
 };
 

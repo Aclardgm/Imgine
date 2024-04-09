@@ -180,18 +180,18 @@ void Imgine_VulkanRenderPassManager::beginRenderPass(
     scissor.extent = swapChain->swapChainExtent;
     vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
 
-    for (Imgine_VulkanModel model : scene.models)
+    for (Imgine_VulkanModel& model : scene.models)
     {
         VkDeviceSize offsets[] = { 0 };
-        VkBuffer vertexBuffers[] = { model.vertexBuffer };
+        VkBuffer vertexBuffers[] = { model.vertexBuffer.buffer };
 
         vkCmdBindVertexBuffers(cmdBuffer, 0, 1, vertexBuffers, offsets);
 
-        vkCmdBindIndexBuffer(cmdBuffer,model.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+        vkCmdBindIndexBuffer(cmdBuffer,model.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 
         vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, layout->pipelineLayout, 0, 1, &descSets->descriptorSets[currentFrame], 0, nullptr);
 
-        vkCmdDrawIndexed(cmdBuffer, model.indexBufferSize, 1, 0, 0, 0);
+        vkCmdDrawIndexed(cmdBuffer, model.meshRef.GetMesh().indices.size(), 1, 0, 0, 0);
     }
 }
 

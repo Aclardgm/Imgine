@@ -335,7 +335,6 @@ Imgine_Texture& Imgine_TextureRef::GetTexture()
 #endif
     return Imgine_AssetLoader::GetInstance()->loadedTextures[ID];
 }
-
 void Imgine_Texture::Cleanup(Imgine_Vulkan* instance)
 {
     image.Cleanup(instance);
@@ -355,3 +354,4 @@ void Imgine_VulkanImageSampler::Cleanup(Imgine_Vulkan* instance)
 {
     vkDestroySampler(instance->device, sampler, nullptr);
 }
+

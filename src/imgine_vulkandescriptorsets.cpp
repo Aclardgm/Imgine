@@ -255,6 +255,7 @@ void Imgine_VulkanDescriptorPool::allocateUBOTexturedDescriptorsSets(
 }
 
 
+
 void Imgine_VulkanDescriptorsSetsLayout::cleanup()
 {
 	for (auto lay : layouts)

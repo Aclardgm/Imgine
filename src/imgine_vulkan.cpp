@@ -19,7 +19,6 @@ void Imgine_Vulkan::initVulkan(GLFWwindow* window)
     setupDebugMessenger();
     createGLFWSurface(window);
 
-
     pickPhysicalDevice();
     createLogicalDevice();
 
@@ -40,9 +39,8 @@ void Imgine_Vulkan::initVulkan(GLFWwindow* window)
     createDepthRessources();
     swapChain.createFrameBuffersWithDepth(&depthView);
 
-    scene.loadScene(VikingRoom);
+    scene.loadScene(Sponza);
     createTextureImage();
-
     
 
     //Uniform data

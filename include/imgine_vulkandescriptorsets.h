@@ -13,6 +13,8 @@ struct Imgine_VulkanImageView;
 struct Imgine_VulkanImageSampler;
 
 
+
+
 /// <summary>
 /// Store vector of VkDescriptorSetLayout
 /// </summary>
@@ -74,6 +76,7 @@ public:
 		Imgine_VulkanUniformBuffer* ubos,
 		Imgine_VulkanImageView* view,
 		Imgine_VulkanImageSampler* sampler);
+
 private:
 	VkDescriptorPool descriptorPool;
 };

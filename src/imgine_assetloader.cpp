@@ -8,6 +8,7 @@
 #include "imgine_vulkanimage.h"
 #include "imgine_assimp.h"
 #include "imgine_types.h"
+#include "imgine_mesh.h"
 
 
 void loadImage(Imgine_Vulkan* instance,std::string path,VkImage* image, VmaAllocation* allocation)
@@ -62,6 +63,8 @@ Imgine_TextureRef Imgine_AssetLoader::loadTexture(Imgine_Vulkan* instance, const
         loadImage(instance, path, &texture.image.image, &texture.image.allocation);
         texture.path = path;
         texture.type = typeName;
+        texture.image.format = VK_FORMAT_A8B8G8R8_SRGB_PACK32;
+
 
         loadedTextures.push_back(texture);
         Imgine_TextureRef ref = { loadedTextures.size() - 1 };
@@ -104,9 +107,17 @@ std::vector<Imgine_VulkanModel> Imgine_AssetLoader::loadModels(Imgine_Vulkan* in
     for (Imgine_Mesh& mesh : meshes)
     {
         //TODO check mesh already loaded
-        loadedMeshes.push_back(mesh);
+        loadedMeshes.push_back(std::move(mesh));
+        Imgine_MeshRef ref((unsigned int)(loadedMeshes.size() - 1));
 
-        models.push_back(std::move(Imgine_VulkanModel(instance, loadedMeshes[loadedMeshes.size() - 1])));
+        Imgine_VulkanModel model( instance,
+                    loadedMeshes[loadedMeshes.size() - 1],
+                    ref);
+
+
+        models.push_back(std::move(model));
+
+
     }
     return models;
 }

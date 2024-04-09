@@ -87,10 +87,12 @@ public:
 
     Imgine_Scene scene;
 
-    //Image data
+    ////Image data
     Imgine_TextureRef imageRef;
     Imgine_VulkanImageView view;
     Imgine_VulkanImageSampler sampler;
+
+
 
     //Depth data
     Imgine_VulkanImage depthImage;

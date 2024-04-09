@@ -11,6 +11,7 @@
 struct Imgine_Vulkan;
 
 
+
 void loadImage(Imgine_Vulkan* instance, std::string path, VkImage* image, VmaAllocation* allocation);
 
 std::vector<Imgine_Mesh> loadMeshes(Imgine_Vulkan* instance, std::string path, unsigned int flags);
@@ -34,7 +35,6 @@ public:
 		"texture_normal",
 		"texture_height"
 	};
-
 
 	static Imgine_AssetLoader* GetInstance() {
 		static Imgine_AssetLoader instance;

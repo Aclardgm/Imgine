@@ -45,8 +45,6 @@ public:
     Imgine_CommandBufferPool() = delete;
     Imgine_CommandBufferPool(Imgine_Vulkan* instance) :Imgine_VulkanInstanceBind(instance) {}
 
-
-
     Imgine_CommandBuffer* allocateBuffers();
     void allocateBuffers(VkSurfaceKHR surface);
     void cleanup();

@@ -2,7 +2,8 @@
 #include "imgine_assetloader.h"
 #include "imgine_define.h"
 #include "imgine_vulkancommandbuffer.h"
-#include  "imgine_vulkanmemoryallocator.h"
+#include "imgine_vulkanmemoryallocator.h"
+#include "imgine_vulkan.h"
 #include <assert.h>
 
 Imgine_Mesh& Imgine_MeshRef::GetMesh()
@@ -13,49 +14,43 @@ Imgine_Mesh& Imgine_MeshRef::GetMesh()
 	return Imgine_AssetLoader::GetInstance()->loadedMeshes[ID];
 }
 
-void Imgine_VulkanModel::Allocate(Imgine_Vulkan* instance, Imgine_Mesh& mesh)
+Imgine_VulkanModel::Imgine_VulkanModel(Imgine_Vulkan* instance, Imgine_Mesh& mesh, Imgine_MeshRef meshRef)
+    : vertexBuffer(
+        instance,
+        sizeof(mesh.vertices[0])* mesh.vertices.size(),
+        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+        VMA_MEMORY_USAGE_GPU_ONLY),
+    indexBuffer(
+        instance,
+        sizeof(mesh.indices[0])* mesh.indices.size(),
+        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+        VMA_MEMORY_USAGE_GPU_ONLY),
+    meshRef(meshRef)
 {
-    VkDeviceSize bufferSize = sizeof(mesh.vertices[0]) * mesh.vertices.size();
 
-    VkBuffer stagingBuffer;
-    VmaAllocation  stagingAllocation;
+    size_t vertexSize = (sizeof(mesh.vertices[0]) * mesh.vertices.size());
 
-    createTemporaryBuffer(instance, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, stagingBuffer, stagingAllocation);
+    Buffer vertexStageBuffer{ instance,vertexSize , VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY };
+    vertexStageBuffer.update(mesh.vertices.data(), vertexSize, 0);
 
-    void* mappedData;
-    copyMappedMemorytoAllocation(instance, mesh.vertices.data(), stagingAllocation, static_cast<uint32_t>(mesh.vertices.size()), &mappedData);
-
-    createBuffer(instance, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, vertexBuffer, vertexBufferAllocation);
-
-    copyBuffer(instance, stagingBuffer, vertexBuffer, bufferSize);
-
-    destroyBuffer(instance, stagingBuffer, stagingAllocation);
-
-    vertexBufferSize = mesh.vertices.size();
+    VkCommandBuffer commandBuffer = instance->commandBufferManager.beginSingleTimeCommand();
+    copyBuffer(instance, vertexStageBuffer.buffer, vertexBuffer.buffer, vertexSize);
+    vertexStageBuffer.Cleanup();
 
 
-    VkBuffer stagingIndexBuffer;
-    VmaAllocation  stagingIndexAllocation;
+    size_t indexSize = (sizeof(mesh.indices[0]) * mesh.indices.size());
 
-    VkDeviceSize bufferIndexSize = sizeof(mesh.indices[0]) * mesh.indices.size();
+    Buffer indexStageBuffer{ instance, indexSize , VK_BUFFER_USAGE_TRANSFER_SRC_BIT,VMA_MEMORY_USAGE_CPU_ONLY };
+    indexStageBuffer.update(mesh.indices.data(), indexSize, 0);
 
-    createTemporaryBuffer(instance, bufferIndexSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, stagingIndexBuffer, stagingIndexAllocation);
+    commandBuffer = instance->commandBufferManager.beginSingleTimeCommand();
+    copyBuffer(instance, indexStageBuffer.buffer, indexBuffer.buffer, indexSize);
+    indexStageBuffer.Cleanup();
 
-    void* mappedIndexData;
-    copyMappedMemorytoAllocation(instance, mesh.indices.data(), stagingIndexAllocation, static_cast<uint32_t>(mesh.indices.size()), &mappedIndexData);
-
-    createBuffer(instance, bufferIndexSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, indexBuffer, indexBufferAllocation);
-
-    copyBuffer(instance, stagingIndexBuffer, indexBuffer, bufferIndexSize);
-    destroyBuffer(instance, stagingIndexBuffer, stagingIndexAllocation);
-
-    indexBufferSize = mesh.indices.size();
-
-    textures = mesh.textures;
 }
-
 void Imgine_VulkanModel::Cleanup(Imgine_Vulkan* instance)
 {
-	destroyBuffer(instance, vertexBuffer, vertexBufferAllocation);
-	destroyBuffer(instance, indexBuffer, indexBufferAllocation);
+    vertexBuffer.Cleanup();
+    indexBuffer.Cleanup();
+
 }

@@ -7,6 +7,8 @@
 #include <vulkan/vulkan.h>
 #include "imgine_glm.h"
 #include "imgine_vulkanimage.h"
+#include "imgine_vulkanbuffer.h"
+
 
 
 struct Imgine_Vertex {
@@ -68,25 +70,46 @@ struct Imgine_Vertex {
         attributeDescriptions[2].offset = offsetof(Imgine_Vertex, texCoord);
         return attributeDescriptions;
     }
-
-
-
 };
+
+
 
 /// <summary>
 /// Contain mesh data (Vertex,Indices,TexturesRef)
+/// Mesh contains lots of data => we never allow to copy it, only moving it
+/// Maybe providing method to generate a copy from existing one to allow modification on a new instance
 /// </summary>
 struct Imgine_Mesh {
-
-    Imgine_Mesh() {}
-    Imgine_Mesh(std::vector<Imgine_Vertex> vert ,
-        std::vector<uint32_t> inds ,
-        std::vector<Imgine_TextureRef> texts) : vertices(vert), indices(inds), textures(texts) {}
-
 	std::vector<Imgine_Vertex> vertices;
 	std::vector<uint32_t> indices;
     std::vector<Imgine_TextureRef> textures;
 
+    Imgine_Mesh() {}
+    Imgine_Mesh(
+        std::vector<Imgine_Vertex> vert,
+        std::vector<uint32_t> inds,
+        std::vector<Imgine_TextureRef> texts) : 
+        vertices(vert), indices(inds), textures(texts) {}
+
+    Imgine_Mesh(Imgine_Mesh&& other) :
+        vertices(), indices(), textures() 
+    {
+
+        *this = std::move(other);
+        other.vertices.clear();
+        other.indices.clear();
+        other.textures.clear();
+    }
+    Imgine_Mesh& operator=(Imgine_Mesh&& other)
+    {
+        vertices = std::move(other.vertices);
+        indices = std::move(other.indices);
+        textures = std::move(other.textures);
+        return *this;
+    }
+
+    Imgine_Mesh(Imgine_Mesh& mesh) = delete;
+    Imgine_Mesh& operator=(Imgine_Mesh& other) = delete;
 
     void Cleanup()
     {
@@ -106,54 +129,36 @@ struct Imgine_MeshRef {
 };
 
 /// <summary>
-/// Contain vertex and indices allocation for specific asset
+/// Contain vertex and indices allocation for specific submesh
+/// and associated textures
 /// </summary>
 struct Imgine_VulkanModel {
-
     Imgine_VulkanModel(const Imgine_VulkanModel& other)
-        :vertexBuffer(other.vertexBuffer), 
-        vertexBufferAllocation(other.vertexBufferAllocation), 
-        indexBuffer(other.indexBuffer), 
-        indexBufferAllocation(other.indexBufferAllocation ), 
-        vertexBufferSize(other.indexBufferSize),
-        indexBufferSize(other.vertexBufferSize)
+        :vertexBuffer(other.vertexBuffer),
+        indexBuffer(other.indexBuffer),
+        meshRef(other.meshRef.ID)
     {
+
 
     }
     Imgine_VulkanModel(Imgine_VulkanModel&& other)
-        :vertexBuffer(std::move(other.vertexBuffer)),
-        vertexBufferAllocation(std::move(other.vertexBufferAllocation)),
+        : vertexBuffer(std::move(other.vertexBuffer)),
         indexBuffer(std::move(other.indexBuffer)),
-        indexBufferAllocation(std::move(other.indexBufferAllocation)),
-        vertexBufferSize(std::move(other.indexBufferSize)),
-        indexBufferSize(std::move(other.vertexBufferSize))
+        meshRef(other.meshRef)
     {
 
     }
-    Imgine_VulkanModel(Imgine_Vulkan* instance, Imgine_Mesh& mesh)
-        :vertexBuffer(), vertexBufferAllocation(), indexBuffer(), indexBufferAllocation(), vertexBufferSize(0), indexBufferSize(0)
-    {
-        Allocate(instance, mesh);
-    }
+    Imgine_VulkanModel(Imgine_Vulkan* instance, Imgine_Mesh& mesh, Imgine_MeshRef meshRef);
 
-    std::vector<Imgine_TextureRef> textures;
-    VkBuffer vertexBuffer;
-    VmaAllocation vertexBufferAllocation;
-    VkBuffer indexBuffer;
-    VmaAllocation indexBufferAllocation;
-    uint32_t vertexBufferSize;
-    uint32_t indexBufferSize;
-    void Allocate(Imgine_Vulkan* instance, Imgine_Mesh& mesh);
+    Imgine_MeshRef meshRef;
+    Buffer vertexBuffer;
+    Buffer indexBuffer;
+
     void Cleanup(Imgine_Vulkan* instance);
-
-
     Imgine_VulkanModel& operator=(Imgine_VulkanModel&& rhs) { 
         vertexBuffer = std::move(rhs.vertexBuffer);
-        vertexBufferAllocation = std::move(rhs.vertexBufferAllocation);
         indexBuffer = std::move(rhs.indexBuffer);
-        indexBufferAllocation = std::move(rhs.indexBufferAllocation);
-        vertexBufferSize = std::move(rhs.vertexBufferSize);
-        indexBufferSize = std::move(rhs.indexBufferSize);
+        meshRef = rhs.meshRef;
     }
 };
 

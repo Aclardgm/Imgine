@@ -20,7 +20,7 @@ struct Imgine_VulkanImageSampler;
 struct Imgine_VulkanImage {
 	VkImage image;
 	VmaAllocation allocation;
-
+	VkFormat format = VK_FORMAT_UNDEFINED;
 	void Cleanup(Imgine_Vulkan* instance);
 };
 
@@ -60,11 +60,10 @@ struct Imgine_VulkanImageView {
 struct Imgine_VulkanImageSampler {
 
     Imgine_VulkanImageSampler() {}
-
 	void Cleanup(Imgine_Vulkan* instance);
-
     VkSampler sampler;
 };
+
 
 
 
