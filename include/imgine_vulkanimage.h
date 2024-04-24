@@ -44,8 +44,11 @@ struct Imgine_Texture {
 
 //Id to specific loaded asset in AssetLoader
 struct Imgine_TextureRef {
+	
 	unsigned int ID = FALSE_ID;
+public:
 	Imgine_Texture& GetTexture();
+	Imgine_Texture& GetTexture() const;
 };
 
 struct Imgine_VulkanImageView {
@@ -82,13 +85,13 @@ void transitionImageLayout(
 	VkImageAspectFlags aspectFlags,
 	VkImageLayout oldLayout,
 	VkImageLayout newLayout);
-
-void copyBufferToImage(
-	Imgine_Vulkan* instance,
-	VkBuffer buffer,
-	VkImage image,
-	uint32_t width,
-	uint32_t height);
+//
+//void copyBufferToImage(
+//	Imgine_Vulkan* instance,
+//	VkBuffer buffer,
+//	VkImage image,
+//	uint32_t width,
+//	uint32_t height);
 
 void createImage(
 	Imgine_Vulkan* instance,
@@ -100,15 +103,15 @@ void createImage(
 	VkMemoryPropertyFlags properties,
 	VkImage* outImage,
 	VmaAllocation* outAllocation);
-
-void createTextureImage(
-	Imgine_Vulkan* instance,
-	VkDeviceSize imageSize,
-	stbi_uc* pixels,
-	int width,
-	int height,
-	VkImage* textureImage,
-	VmaAllocation* allocation);
+//
+//void createTextureImage(
+//	Imgine_Vulkan* instance,
+//	VkDeviceSize imageSize,
+//	stbi_uc* pixels,
+//	int width,
+//	int height,
+//	VkImage* textureImage,
+//	VmaAllocation* allocation);
 
 
 VkImageView createImageView(Imgine_Vulkan* instance, VkImage image, VkFormat format);

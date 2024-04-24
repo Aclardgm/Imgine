@@ -39,7 +39,7 @@ void Imgine_Vulkan::initVulkan(GLFWwindow* window)
     createDepthRessources();
     swapChain.createFrameBuffersWithDepth(&depthView);
 
-    scene.loadScene(Sponza);
+    scene.loadScene(VikingRoom);
     createTextureImage();
     
 

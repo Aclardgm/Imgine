@@ -35,7 +35,7 @@ Imgine_CommandBuffer* Imgine_CommandBufferPool::allocateBuffers() {
 
 
 void Imgine_CommandBuffer::beginRenderPass(Imgine_VulkanRenderPass* renderPass, Imgine_SwapChain* swapChain, uint32_t imageIndex) {
-    begin();
+    begin(VK_NO_FLAGS);
 
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -75,18 +75,113 @@ Imgine_CommandBuffer::Imgine_CommandBuffer(Imgine_Vulkan* instance, Imgine_Comma
         vkAllocateCommandBuffers(getVulkanInstanceBind()->GetDevice(), &allocInfo, &(commandBuffer))
     )
 }
-void Imgine_CommandBuffer::begin() {
+Imgine_CommandBuffer::Imgine_CommandBuffer(Imgine_CommandBuffer&& other) :
+    Imgine_VulkanInstanceBind(std::move(other)),
+    commandBuffer(std::move(other.commandBuffer)),
+    commandPool(other.commandPool),
+    state(other.state)
+{
+    other.state = CommandBufferState::Invalid;
+}
+void Imgine_CommandBuffer::copyBuffertoImage(
+    const Imgine_Buffer& buffer, 
+    const Imgine_VulkanImage& image, 
+    uint32_t width, uint32_t height)
+{
+
+    VkBufferImageCopy region{};
+    region.bufferOffset = 0;
+    region.bufferRowLength = 0;
+    region.bufferImageHeight = 0;
+    region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    region.imageSubresource.mipLevel = 0;
+    region.imageSubresource.baseArrayLayer = 0;
+    region.imageSubresource.layerCount = 1;
+    region.imageOffset = { 0, 0, 0 };
+    region.imageExtent = {
+        width,
+        height,
+        1
+    };
+
+    vkCmdCopyBufferToImage(commandBuffer, buffer.buffer, image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+}
+void Imgine_CommandBuffer::copyBuffer(const Imgine_Buffer& src, const Imgine_Buffer& dst, VkDeviceSize size)
+{
+    VkBufferCopy copyRegion{};
+    copyRegion.size = size;
+    vkCmdCopyBuffer(commandBuffer, src.buffer, dst.buffer, 1, &copyRegion);
+}
+void Imgine_CommandBuffer::imageMemoryBarrier(
+    const Imgine_VulkanImage& image,
+    const Imgine_ImageMemoryBarrier& barrierState)
+{
+    VkImageMemoryBarrier barrier{};
+    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    barrier.oldLayout = barrierState.old_layout;
+    barrier.newLayout = barrierState.new_layout;
+    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.image = image.image;
+    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    barrier.subresourceRange.baseMipLevel = 0;
+    barrier.subresourceRange.levelCount = 1;
+    barrier.subresourceRange.baseArrayLayer = 0;
+    barrier.subresourceRange.layerCount = 1;
+
+    VkPipelineStageFlags sourceStage;
+    VkPipelineStageFlags destinationStage;
+    if (barrierState.old_layout == VK_IMAGE_LAYOUT_UNDEFINED && barrierState.new_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+        barrier.srcAccessMask = 0;
+        barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+        sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+    }
+    else if (barrierState.old_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && barrierState.new_layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+        sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+        destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    }
+    else if (barrierState.old_layout == VK_IMAGE_LAYOUT_UNDEFINED && barrierState.new_layout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
+        barrier.srcAccessMask = 0;
+        barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+        sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    }
+    else {
+        throw std::invalid_argument("unsupported layout transition!");
+    }
+    vkCmdPipelineBarrier(
+        commandBuffer,
+        sourceStage, destinationStage,
+        0,
+        0, nullptr,
+        0, nullptr,
+        1, &barrier
+    );
+}
+
+
+
+
+void Imgine_CommandBuffer::begin(VkCommandBufferUsageFlags flags) {
+
+    assert(!is_recording() && "Command buffer is already recording, please call end before beginning again");
+
+    state = CommandBufferState::Recording;
 
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = flags;
     CHECK_VK(
         "failed to begin recording command buffer!",
         vkBeginCommandBuffer(commandBuffer, &beginInfo) 
     )
 
-    //if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
-    //    throw std::runtime_error("failed to begin recording command buffer!");
-    //}
 }
 
 
@@ -96,15 +191,21 @@ void Imgine_CommandBuffer::endRenderPass()
     vkCmdEndRenderPass(commandBuffer);
 }
 
+bool Imgine_CommandBuffer::is_recording() const
+{
+    return state == CommandBufferState::Recording;
+}
+
 void Imgine_CommandBuffer::end() {
+    assert(is_recording() && "CommandBuffer is not recording, please call begin before end");
+
     CHECK_VK(
         "failed to record command buffer!",
         vkEndCommandBuffer(commandBuffer)
     )
 
-    //if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
-    //    throw std::runtime_error("failed to record command buffer!");
-    //}
+    state = CommandBufferState::Executable;
+
 }
 
 void Imgine_CommandBufferPool::allocateBuffers(VkSurfaceKHR surface) {
@@ -121,9 +222,6 @@ void Imgine_CommandBufferPool::allocateBuffers(VkSurfaceKHR surface) {
         vkCreateCommandPool(getVulkanInstanceBind()->GetDevice(), &poolInfo, nullptr, &commandPool)
     )
 
-    //if (vkCreateCommandPool(getVulkanInstanceBind()->GetDevice(), &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
-    //    throw std::runtime_error("failed to create command pool!");
-    //}
 }
 
 
@@ -135,6 +233,14 @@ void Imgine_CommandBufferPool::cleanup() {
     commandBuffers.clear();
 
     vkDestroyCommandPool(getVulkanInstanceBind()->GetDevice(), commandPool, nullptr);
+}
+
+Imgine_CommandBuffer& Imgine_CommandBufferPool::requestCommandBuffer(VkCommandBufferLevel level)
+{
+    Imgine_CommandBuffer* commandBuffer = new Imgine_CommandBuffer(instance, *this, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+    commandBuffers.push_back(commandBuffer);
+    return *commandBuffers.back();
 }
 
 
@@ -181,6 +287,11 @@ void Imgine_CommandBufferManager::cleanup()
     {
         renderFinishedSemaphores[i].Cleanup();
     }
+}
+
+Imgine_CommandBuffer& Imgine_CommandBufferManager::requestCommandBuffer()
+{
+    return pool.requestCommandBuffer();
 }
 
 

@@ -12,7 +12,7 @@ struct Imgine_Vulkan;
 
 
 
-void loadImage(Imgine_Vulkan* instance, std::string path, VkImage* image, VmaAllocation* allocation);
+void loadImage(Imgine_Vulkan* instance, std::string path,Imgine_VulkanImage& image);
 
 std::vector<Imgine_Mesh> loadMeshes(Imgine_Vulkan* instance, std::string path, unsigned int flags);
 

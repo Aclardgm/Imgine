@@ -28,7 +28,7 @@ namespace imgine {
     }
 
 #define CHECK_VK(mess,err) imgine::check_vk_result((VkResult)(err),mess);
-
+#define VK_NO_FLAGS 0
 
 #else
     static inline void check_vk_result(VkResult err, std::string)

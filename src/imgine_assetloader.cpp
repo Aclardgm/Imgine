@@ -9,9 +9,10 @@
 #include "imgine_assimp.h"
 #include "imgine_types.h"
 #include "imgine_mesh.h"
+#include "imgine_vulkancommons.h"
 
 
-void loadImage(Imgine_Vulkan* instance,std::string path,VkImage* image, VmaAllocation* allocation)
+void loadImage(Imgine_Vulkan* instance,std::string path, Imgine_VulkanImage& image)
 {
     VkDevice device = instance->GetDevice();
     int width, height, colorDefinition;
@@ -24,7 +25,70 @@ void loadImage(Imgine_Vulkan* instance,std::string path,VkImage* image, VmaAlloc
         throw std::runtime_error("failed to load texture image!");
     }
 
-    createTextureImage(instance, imageSize,pixels,width,height, image, allocation);
+    Imgine_CommandBuffer& commandBuffer = instance->commandBufferManager.requestCommandBuffer();
+
+    commandBuffer.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+
+
+    Imgine_Buffer stagingBuffer{ instance,imageSize,VK_BUFFER_USAGE_TRANSFER_SRC_BIT ,VMA_MEMORY_USAGE_CPU_ONLY };
+    stagingBuffer.update(pixels, imageSize, 0);
+    
+
+    createImage(
+        instance,
+        width,
+        height,
+        VK_FORMAT_R8G8B8A8_SRGB,
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        &image.image,
+        &image.allocation);
+
+    Imgine_ImageMemoryBarrier barrier;
+
+
+    {
+        barrier.old_layout = VK_IMAGE_LAYOUT_UNDEFINED;
+        barrier.new_layout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        barrier.src_access_mask = 0;
+        barrier.dst_access_mask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        barrier.src_stage_mask = VK_PIPELINE_STAGE_HOST_BIT;
+        barrier.dst_stage_mask = VK_PIPELINE_STAGE_TRANSFER_BIT;
+        commandBuffer.imageMemoryBarrier(image, barrier);
+    }
+
+    commandBuffer.copyBuffertoImage(stagingBuffer, image, width, height);
+
+
+    {
+        barrier.old_layout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        barrier.new_layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        barrier.src_access_mask = 0;
+        barrier.dst_access_mask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        barrier.src_stage_mask = VK_PIPELINE_STAGE_HOST_BIT;
+        barrier.dst_stage_mask = VK_PIPELINE_STAGE_TRANSFER_BIT;
+        commandBuffer.imageMemoryBarrier(image, barrier);
+    }
+
+
+    //instance->commandBufferManager.endSingleTimeCommand(instance->graphicsQueue, commandBuffer.commandBuffer);
+
+    commandBuffer.end();
+
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &commandBuffer.commandBuffer;
+
+    vkQueueSubmit(instance->graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+    vkQueueWaitIdle(instance->graphicsQueue);
+
+    vkFreeCommandBuffers(instance->GetDevice(), commandBuffer.commandPool.commandPool, 1, &commandBuffer.commandBuffer);
+
+    stagingBuffer.Cleanup();
+    
+    //createTextureImage(instance, imageSize,pixels,width,height, image, allocation);
 
     stbi_image_free(pixels);
 }
@@ -60,7 +124,8 @@ Imgine_TextureRef Imgine_AssetLoader::loadTexture(Imgine_Vulkan* instance, const
     {   // if texture hasn't been loaded already, load it
         Imgine_Texture texture;
 
-        loadImage(instance, path, &texture.image.image, &texture.image.allocation);
+
+        loadImage(instance, path, texture.image);
         texture.path = path;
         texture.type = typeName;
         texture.image.format = VK_FORMAT_A8B8G8R8_SRGB_PACK32;

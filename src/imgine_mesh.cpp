@@ -35,6 +35,7 @@ Imgine_VulkanModel::Imgine_VulkanModel(Imgine_Vulkan* instance, Imgine_Mesh& mes
 
     VkCommandBuffer commandBuffer = instance->commandBufferManager.beginSingleTimeCommand();
     copyBuffer(instance, vertexStageBuffer.buffer, vertexBuffer.buffer, vertexSize);
+    
     vertexStageBuffer.Cleanup();
 
 
