@@ -5,9 +5,9 @@
 #include "imgine_vulkaninstancebind.h"
 #include "imgine_vulkanmemoryallocator.h"
 
-struct Buffer : public Imgine_VulkanInstanceBind
+struct Imgine_Buffer : public Imgine_VulkanInstanceBind
 {
-	Buffer(
+	Imgine_Buffer(
 		Imgine_Vulkan* instance,
 		VkDeviceSize size,
 		VkBufferUsageFlags buffer_usage,
@@ -55,9 +55,6 @@ struct Buffer : public Imgine_VulkanInstanceBind
 	uint8_t* mapped_data{ nullptr };
 	bool mapped = false;
 };
-
-
-
 
 
 #endif

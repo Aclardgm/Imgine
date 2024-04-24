@@ -35,7 +35,13 @@ const std::array<SceneImport,2> scenesImports =
 		},
 		{
 			"models/sponza/sponza.obj",
-			aiProcessPreset_TargetRealtime_MaxQuality
+			aiProcess_CalcTangentSpace |
+			aiProcess_Triangulate |
+			aiProcess_JoinIdenticalVertices |
+			aiProcess_FlipUVs |
+			aiProcess_SortByPType
+			
+			//aiProcessPreset_TargetRealtime_MaxQuality
 		}
 	}
 };

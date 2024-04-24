@@ -3,6 +3,8 @@ cmake_minimum_required(VERSION 3.29)
 ### Project Configuration 
 project(Imgine VERSION 0.0.0 LANGUAGES CXX)
 
+## Tell visual studio to use Imgine as startup project
+set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT Imgine)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
@@ -303,3 +305,11 @@ add_custom_command(TARGET ${TEST_PROJECT_NAME} POST_BUILD
         "${PROJECT_BINARY_DIR}/shaders"
         "$<TARGET_FILE_DIR:${TEST_PROJECT_NAME}>/shaders"
 )
+
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:${PROJECT_NAME}>/shaders/"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${PROJECT_BINARY_DIR}/shaders"
+        "$<TARGET_FILE_DIR:${PROJECT_NAME}>/shaders"
+)
+

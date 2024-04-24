@@ -6,28 +6,31 @@
 
 Imgine_CommandBuffer* Imgine_CommandBufferPool::allocateBuffers() {
 
-    Imgine_CommandBuffer* buffer = new Imgine_CommandBuffer(getVulkanInstanceBind());
+    //Imgine_CommandBuffer* buffer = new Imgine_CommandBuffer(getVulkanInstanceBind());
 
-    VkCommandBufferAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.commandPool = commandPool;
+    //VkCommandBufferAllocateInfo allocInfo{};
+    //allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    //allocInfo.commandPool = commandPool;
 
-    //PRIMARY -> Allocate for queue exec, but can't be called from others cmdBuffers
-    //SECONDARY -> Can't be submitted directlt, can be called from others PRIMARY cmdBuffers
-    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandBufferCount = 1;
+    ////PRIMARY -> Allocate for queue exec, but can't be called from others cmdBuffers
+    ////SECONDARY -> Can't be submitted directlt, can be called from others PRIMARY cmdBuffers
+    //allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    //allocInfo.commandBufferCount = 1;
 
 
-    CHECK_VK(
-        "failed to allocate command buffers!",
-        vkAllocateCommandBuffers(getVulkanInstanceBind()->GetDevice(), &allocInfo, &(buffer->commandBuffer))
-    )
+    //CHECK_VK(
+    //    "failed to allocate command buffers!",
+    //    vkAllocateCommandBuffers(getVulkanInstanceBind()->GetDevice(), &allocInfo, &(buffer->commandBuffer))
+    //)
 
-    /*if (vkAllocateCommandBuffers(getVulkanInstanceBind()->GetDevice(), &allocInfo, &(buffer->commandBuffer)) != VK_SUCCESS) {
-        throw std::runtime_error("failed to allocate command buffers!");
-    }*/
-    commandBuffers.push_back(buffer);
-    return buffer;
+    //    /*if (vkAllocateCommandBuffers(getVulkanInstanceBind()->GetDevice(), &allocInfo, &(buffer->commandBuffer)) != VK_SUCCESS) {
+    //        throw std::runtime_error("failed to allocate command buffers!");
+    //    }*/
+
+    Imgine_CommandBuffer* commandBuffer = new Imgine_CommandBuffer(instance, *this, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+    commandBuffers.push_back(commandBuffer);
+    return commandBuffer;
 }
 
 
@@ -47,17 +50,35 @@ void Imgine_CommandBuffer::beginRenderPass(Imgine_VulkanRenderPass* renderPass, 
     // !! Order of clear values similar to attachment order !! 
     clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
     clearValues[1].depthStencil = { 1.0f, 0 };
+
     renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
     renderPassInfo.pClearValues = clearValues.data();
 
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 }
+
+Imgine_CommandBuffer::Imgine_CommandBuffer(Imgine_Vulkan* instance, Imgine_CommandBufferPool& pool, VkCommandBufferLevel level) :
+    Imgine_VulkanInstanceBind(instance),
+    commandPool(pool)
+{
+
+    VkCommandBufferAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.commandPool = commandPool.commandPool;
+    allocInfo.commandBufferCount = 1;
+    allocInfo.level = level;
+
+
+    CHECK_VK(
+        "failed to allocate command buffers!",
+        vkAllocateCommandBuffers(getVulkanInstanceBind()->GetDevice(), &allocInfo, &(commandBuffer))
+    )
+}
 void Imgine_CommandBuffer::begin() {
 
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
     CHECK_VK(
         "failed to begin recording command buffer!",
         vkBeginCommandBuffer(commandBuffer, &beginInfo) 

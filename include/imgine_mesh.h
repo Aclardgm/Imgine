@@ -151,8 +151,8 @@ struct Imgine_VulkanModel {
     Imgine_VulkanModel(Imgine_Vulkan* instance, Imgine_Mesh& mesh, Imgine_MeshRef meshRef);
 
     Imgine_MeshRef meshRef;
-    Buffer vertexBuffer;
-    Buffer indexBuffer;
+    Imgine_Buffer vertexBuffer;
+    Imgine_Buffer indexBuffer;
 
     void Cleanup(Imgine_Vulkan* instance);
     Imgine_VulkanModel& operator=(Imgine_VulkanModel&& rhs) { 

@@ -7,10 +7,12 @@
 #include "imgine_vulkaninstancebind.h"
 #include "imgine_vulkansemaphore.h"
 #include "imgine_vulkanmemoryallocator.h"
+#include "imgine_vulkanhelpers.h"
 
 struct Imgine_VulkanRenderPass;
 struct Imgine_SwapChain;
 struct Imgine_CommandBufferManager;
+struct Imgine_CommandBufferPool;
 
 /// VMA helpers
 void copyBuffer(Imgine_Vulkan* instance, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
@@ -25,7 +27,8 @@ struct Imgine_CommandBuffer : public Imgine_VulkanInstanceBind {
 
 
 public:
-    Imgine_CommandBuffer(Imgine_Vulkan* instance) : Imgine_VulkanInstanceBind(instance) {}
+
+    Imgine_CommandBuffer(Imgine_Vulkan* instance, Imgine_CommandBufferPool& pool, VkCommandBufferLevel level);
 
     /// <summary>
     /// vkBeginCommandBuffer
@@ -34,6 +37,8 @@ public:
     void end();
     void beginRenderPass(Imgine_VulkanRenderPass* renderPass, Imgine_SwapChain* swapChain, uint32_t imageIndex);
     void endRenderPass();
+
+    Imgine_CommandBufferPool& commandPool;
     VkCommandBuffer commandBuffer;
 };
 
@@ -49,9 +54,9 @@ public:
     void allocateBuffers(VkSurfaceKHR surface);
     void cleanup();
 
+    VkCommandPool commandPool;
 private:
     std::vector<Imgine_CommandBuffer*> commandBuffers;
-    VkCommandPool commandPool;
 };
 
 struct Imgine_CommandBufferManager : public Imgine_VulkanInstanceBind

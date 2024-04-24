@@ -30,7 +30,7 @@ Imgine_VulkanModel::Imgine_VulkanModel(Imgine_Vulkan* instance, Imgine_Mesh& mes
 
     size_t vertexSize = (sizeof(mesh.vertices[0]) * mesh.vertices.size());
 
-    Buffer vertexStageBuffer{ instance,vertexSize , VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY };
+    Imgine_Buffer vertexStageBuffer{ instance,vertexSize , VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY };
     vertexStageBuffer.update(mesh.vertices.data(), vertexSize, 0);
 
     VkCommandBuffer commandBuffer = instance->commandBufferManager.beginSingleTimeCommand();
@@ -40,13 +40,12 @@ Imgine_VulkanModel::Imgine_VulkanModel(Imgine_Vulkan* instance, Imgine_Mesh& mes
 
     size_t indexSize = (sizeof(mesh.indices[0]) * mesh.indices.size());
 
-    Buffer indexStageBuffer{ instance, indexSize , VK_BUFFER_USAGE_TRANSFER_SRC_BIT,VMA_MEMORY_USAGE_CPU_ONLY };
+    Imgine_Buffer indexStageBuffer{ instance, indexSize , VK_BUFFER_USAGE_TRANSFER_SRC_BIT,VMA_MEMORY_USAGE_CPU_ONLY };
     indexStageBuffer.update(mesh.indices.data(), indexSize, 0);
 
     commandBuffer = instance->commandBufferManager.beginSingleTimeCommand();
     copyBuffer(instance, indexStageBuffer.buffer, indexBuffer.buffer, indexSize);
     indexStageBuffer.Cleanup();
-
 }
 void Imgine_VulkanModel::Cleanup(Imgine_Vulkan* instance)
 {

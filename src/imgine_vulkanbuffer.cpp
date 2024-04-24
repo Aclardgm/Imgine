@@ -2,7 +2,7 @@
 #include "imgine_vulkan.h"
 #include "imgine_vulkanhelpers.h"
 
-Buffer::Buffer(Imgine_Vulkan* instance, VkDeviceSize size, VkBufferUsageFlags buffer_usage, VmaMemoryUsage memory_usage, VmaAllocationCreateFlags flags)
+Imgine_Buffer::Imgine_Buffer(Imgine_Vulkan* instance, VkDeviceSize size, VkBufferUsageFlags buffer_usage, VmaMemoryUsage memory_usage, VmaAllocationCreateFlags flags)
 	: Imgine_VulkanInstanceBind(instance), size{size}
 {
 	
@@ -23,7 +23,7 @@ Buffer::Buffer(Imgine_Vulkan* instance, VkDeviceSize size, VkBufferUsageFlags bu
 
 }
 
-uint8_t* Buffer::map()
+uint8_t* Imgine_Buffer::map()
 {
 	if (!mapped)
 	{
@@ -34,24 +34,24 @@ uint8_t* Buffer::map()
 	return mapped_data;
 }
 
-void Buffer::unmap()
+void Imgine_Buffer::unmap()
 {
 	vmaUnmapMemory(instance->allocator, allocation);
 }
 
-void Buffer::update(const void* data, const size_t size, const size_t offset)
+void Imgine_Buffer::update(const void* data, const size_t size, const size_t offset)
 {
 	update(reinterpret_cast<const uint8_t*>(data), size, offset);
 }
 
-void Buffer::update(const uint8_t* data, const size_t size, const size_t offset)
+void Imgine_Buffer::update(const uint8_t* data, const size_t size, const size_t offset)
 {
 	map();
 	std::copy(data, data + size, mapped_data + offset);
 	unmap();
 }
 
-void Buffer::Cleanup()
+void Imgine_Buffer::Cleanup()
 {
 	DEBUGVMADESTROY(instance->allocator, allocation);
 	vmaDestroyBuffer(instance->allocator, buffer, allocation);

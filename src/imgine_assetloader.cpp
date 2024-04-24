@@ -97,7 +97,7 @@ Imgine_TextureRef Imgine_AssetLoader::loadTexture(Imgine_Vulkan* instance, const
 
 std::vector<Imgine_VulkanModel> Imgine_AssetLoader::loadModels(Imgine_Vulkan*instance, const char* path)
 {
-    return loadModels(instance, path, aiProcess_CalcTangentSpace | aiProcess_Triangulate | aiProcess_JoinIdenticalVertices | aiProcess_SortByPType);
+    return loadModels(instance, path, 0);//aiProcess_CalcTangentSpace | aiProcess_Triangulate | aiProcess_JoinIdenticalVertices | aiProcess_SortByPType
 }
 
 std::vector<Imgine_VulkanModel> Imgine_AssetLoader::loadModels(Imgine_Vulkan* instance, const char* path, unsigned int flags)
